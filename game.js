@@ -104,6 +104,15 @@ shopItems.forEach((item) => {
     applyTheme();
         }
 
+        if (itemId === "blueLight") {
+    localStorage.setItem(
+        "activeLight",
+        "blueLight"
+    );
+
+    applyTheme();
+        }
+
         item.querySelector("span").textContent =
             "✓ SAHİPSİN";
 
@@ -231,6 +240,20 @@ function applyTheme() {
     if (activeTheme === "fire") {
         document.body.classList.add("theme-fire");
     }
+
+
+/* IŞIK TEMASI */
+const activeLight =
+    localStorage.getItem("activeLight");
+
+document.body.classList.remove(
+    "light-blue"
+);
+
+if (activeLight === "blueLight") {
+    document.body.classList.add("light-blue");
+}
+
 }
 
 applyTheme();
