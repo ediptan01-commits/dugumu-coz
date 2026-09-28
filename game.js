@@ -8,7 +8,7 @@ const stars = document.getElementById("stars");
 const message = document.getElementById("message");
 const resetButton = document.getElementById("resetButton");
 
-const DIRS = ["N", "E", "S", "W"];
+const DIRECTIONS = ["N", "E", "S", "W"];
 
 const DELTA = {
     N: [-1, 0],
@@ -31,9 +31,9 @@ let solved = false;
 let tiles = [];
 
 
-// ========================================
-// TAHTA BOYUTU
-// ========================================
+/* =========================================
+   SEVİYEYE GÖRE TAHTA BOYUTU
+   ========================================= */
 
 function getBoardSize() {
 
@@ -47,48 +47,24 @@ function getBoardSize() {
 }
 
 
-// ========================================
-// YARDIMCI
-// ========================================
+/* =========================================
+   ANAHTAR
+   ========================================= */
 
-function key(row, col) {
+function cellKey(row, col) {
     return `${row}-${col}`;
 }
 
 
-function randomItem(array) {
-    return array[
-        Math.floor(Math.random() * array.length)
-    ];
-}
-
-
-function shuffle(array) {
-
-    const copy = [...array];
-
-    for (let i = copy.length - 1; i > 0; i--) {
-
-        const j =
-            Math.floor(Math.random() * (i + 1));
-
-        [copy[i], copy[j]] =
-            [copy[j], copy[i]];
-    }
-
-    return copy;
-}
-
-
-// ========================================
-// KOMŞULAR
-// ========================================
+/* =========================================
+   KOMŞULAR
+   ========================================= */
 
 function getNeighbors(row, col) {
 
     const result = [];
 
-    for (const direction of DIRS) {
+    for (const direction of DIRECTIONS) {
 
         const [dr, dc] =
             DELTA[direction];
@@ -114,28 +90,64 @@ function getNeighbors(row, col) {
 }
 
 
-// ========================================
-// OTOMATİK BULMACA ÜRET
-// ========================================
+/* =========================================
+   DİZİYİ KARIŞTIR
+   ========================================= */
 
-function generatePuzzle() {
+function shuffle(array) {
+
+    const result = [...array];
+
+    for (
+        let i = result.length - 1;
+        i > 0;
+        i--
+    ) {
+
+        const j =
+            Math.floor(
+                Math.random() * (i + 1)
+            );
+
+        [
+            result[i],
+            result[j]
+        ] = [
+            result[j],
+            result[i]
+        ];
+    }
+
+    return result;
+}
+
+
+/* =========================================
+   TAMAMEN BAĞLI AĞ OLUŞTUR
+   ========================================= */
+
+function createSolvedNetwork() {
 
     const connections = {};
 
-    for (let r = 0; r < size; r++) {
+    for (let row = 0; row < size; row++) {
 
-        for (let c = 0; c < size; c++) {
+        for (let col = 0; col < size; col++) {
 
-            connections[key(r, c)] = [];
+            connections[
+                cellKey(row, col)
+            ] = [];
         }
     }
 
 
     /*
-       RANDOM SPANNING TREE
+       RANDOM DFS
 
        Bütün kareleri birbirine bağlayan
-       garanti çözülebilir bir ağ oluşturur.
+       bir ağaç oluşturuyoruz.
+
+       Böylece hiçbir kare kopuk kalmıyor.
     */
 
     const visited = new Set();
@@ -147,7 +159,9 @@ function generatePuzzle() {
         }
     ];
 
-    visited.add(key(0, 0));
+    visited.add(
+        cellKey(0, 0)
+    );
 
 
     while (stack.length > 0) {
@@ -155,20 +169,26 @@ function generatePuzzle() {
         const current =
             stack[stack.length - 1];
 
-        const neighbors =
+
+        const available =
             shuffle(
                 getNeighbors(
                     current.row,
                     current.col
                 )
-            ).filter(n =>
-                !visited.has(
-                    key(n.row, n.col)
-                )
-            );
+            ).filter(neighbor => {
+
+                return !visited.has(
+                    cellKey(
+                        neighbor.row,
+                        neighbor.col
+                    )
+                );
+
+            });
 
 
-        if (neighbors.length === 0) {
+        if (available.length === 0) {
 
             stack.pop();
 
@@ -176,24 +196,32 @@ function generatePuzzle() {
         }
 
 
-        const next = neighbors[0];
+        const next =
+            available[0];
+
 
         const currentKey =
-            key(
+            cellKey(
                 current.row,
                 current.col
             );
 
         const nextKey =
-            key(
+            cellKey(
                 next.row,
                 next.col
             );
 
 
+        /*
+           İki kareyi birbirine bağla.
+        */
+
         connections[
             currentKey
-        ].push(next.direction);
+        ].push(
+            next.direction
+        );
 
 
         connections[
@@ -205,6 +233,7 @@ function generatePuzzle() {
 
         visited.add(nextKey);
 
+
         stack.push({
             row: next.row,
             col: next.col
@@ -212,151 +241,49 @@ function generatePuzzle() {
     }
 
 
-    /*
-       AĞIN UÇLARINI BUL
-    */
+    return connections;
+}
+
+
+/* =========================================
+   KAYNAK VE HEDEF İÇİN UÇLARI BUL
+   ========================================= */
+
+function getLeaves(connections) {
 
     const leaves = [];
 
-    for (let r = 0; r < size; r++) {
+    for (let row = 0; row < size; row++) {
 
-        for (let c = 0; c < size; c++) {
+        for (let col = 0; col < size; col++) {
 
-            if (
+            const list =
                 connections[
-                    key(r, c)
-                ].length === 1
-            ) {
+                    cellKey(row, col)
+                ];
+
+            /*
+               Tek bağlantılı kareler
+               ağın uçlarıdır.
+            */
+
+            if (list.length === 1) {
+
                 leaves.push({
-                    row: r,
-                    col: c
+                    row,
+                    col
                 });
             }
         }
     }
 
-
-    /*
-       Kaynak ve hedef farklı uçlar.
-    */
-
-    const source =
-        randomItem(leaves);
-
-
-    /*
-       Hedeften uzak bir uç seç.
-    */
-
-    const distances =
-        calculateDistances(
-            connections,
-            source
-        );
-
-
-    let target = null;
-    let maxDistance = -1;
-
-    for (const leaf of leaves) {
-
-        if (
-            leaf.row === source.row &&
-            leaf.col === source.col
-        ) {
-            continue;
-        }
-
-        const distance =
-            distances[
-                key(
-                    leaf.row,
-                    leaf.col
-                )
-            ] || 0;
-
-        if (distance > maxDistance) {
-
-            maxDistance = distance;
-
-            target = leaf;
-        }
-    }
-
-
-    /*
-       Tüm parçaları oluştur.
-    */
-
-    tiles = [];
-
-    for (let r = 0; r < size; r++) {
-
-        tiles[r] = [];
-
-        for (let c = 0; c < size; c++) {
-
-            const con =
-                connections[
-                    key(r, c)
-                ];
-
-            let type = "path";
-
-            if (
-                r === source.row &&
-                c === source.col
-            ) {
-                type = "source";
-            }
-            else if (
-                r === target.row &&
-                c === target.col
-            ) {
-                type = "target";
-            }
-
-
-            tiles[r][c] = {
-
-                type,
-
-                baseConnections: [...con],
-
-                rotation:
-                    Math.floor(
-                        Math.random() * 4
-                    )
-            };
-        }
-    }
-
-
-    /*
-       Çözülmüş kalma ihtimalini engelle.
-    */
-
-    if (isSolved()) {
-
-        const r =
-            Math.floor(
-                Math.random() * size
-            );
-
-        const c =
-            Math.floor(
-                Math.random() * size
-            );
-
-        tiles[r][c].rotation =
-            (tiles[r][c].rotation + 1) % 4;
-    }
+    return leaves;
 }
 
 
-// ========================================
-// AĞ MESAFESİ
-// ========================================
+/* =========================================
+   UZAKLIK HESAPLA
+   ========================================= */
 
 function calculateDistances(
     connections,
@@ -373,7 +300,10 @@ function calculateDistances(
     ];
 
     distances[
-        key(start.row, start.col)
+        cellKey(
+            start.row,
+            start.col
+        )
     ] = 0;
 
 
@@ -383,10 +313,11 @@ function calculateDistances(
             queue.shift();
 
         const currentKey =
-            key(
+            cellKey(
                 current.row,
                 current.col
             );
+
 
         const currentDistance =
             distances[currentKey];
@@ -407,11 +338,12 @@ function calculateDistances(
                 current.col + dc;
 
             const nextKey =
-                key(nr, nc);
+                cellKey(nr, nc);
 
 
             if (
-                distances[nextKey] === undefined
+                distances[nextKey] ===
+                undefined
             ) {
 
                 distances[nextKey] =
@@ -425,18 +357,231 @@ function calculateDistances(
         }
     }
 
+
     return distances;
 }
 
 
-// ========================================
-// PARÇANIN GERÇEK BAĞLANTILARI
-// ========================================
+/* =========================================
+   UZAK HEDEF BUL
+   ========================================= */
+
+function findTarget(
+    connections,
+    source,
+    leaves
+) {
+
+    const distances =
+        calculateDistances(
+            connections,
+            source
+        );
+
+
+    let target = null;
+    let longest = -1;
+
+
+    for (const leaf of leaves) {
+
+        if (
+            leaf.row === source.row &&
+            leaf.col === source.col
+        ) {
+            continue;
+        }
+
+
+        const distance =
+            distances[
+                cellKey(
+                    leaf.row,
+                    leaf.col
+                )
+            ];
+
+
+        if (
+            distance !== undefined &&
+            distance > longest
+        ) {
+
+            longest = distance;
+
+            target = leaf;
+        }
+    }
+
+
+    return target;
+}
+
+
+/* =========================================
+   YENİ BULMACA ÜRET
+   ========================================= */
+
+function generatePuzzle() {
+
+    size = getBoardSize();
+
+    let attempts = 0;
+
+
+    while (attempts < 100) {
+
+        attempts++;
+
+
+        /*
+           Önce kesin bağlı ağ oluştur.
+        */
+
+        const network =
+            createSolvedNetwork();
+
+
+        const leaves =
+            getLeaves(network);
+
+
+        if (leaves.length < 2) {
+            continue;
+        }
+
+
+        /*
+           Kaynak seç.
+        */
+
+        const source =
+            leaves[
+                Math.floor(
+                    Math.random() *
+                    leaves.length
+                )
+            ];
+
+
+        /*
+           Kaynaktan en uzak uç hedef.
+        */
+
+        const target =
+            findTarget(
+                network,
+                source,
+                leaves
+            );
+
+
+        if (!target) {
+            continue;
+        }
+
+
+        /*
+           Tahtayı oluştur.
+        */
+
+        tiles = [];
+
+        for (let row = 0; row < size; row++) {
+
+            tiles[row] = [];
+
+            for (let col = 0; col < size; col++) {
+
+                const connections =
+                    network[
+                        cellKey(row, col)
+                    ];
+
+
+                let type = "path";
+
+
+                if (
+                    row === source.row &&
+                    col === source.col
+                ) {
+                    type = "source";
+                }
+
+
+                if (
+                    row === target.row &&
+                    col === target.col
+                ) {
+                    type = "target";
+                }
+
+
+                tiles[row][col] = {
+
+                    type,
+
+                    /*
+                       Bu, bulmacanın doğru
+                       çözümündeki bağlantılar.
+                    */
+
+                    solution:
+                        [...connections],
+
+                    /*
+                       Başlangıçta rastgele
+                       döndürülmüş olacak.
+                    */
+
+                    rotation:
+                        Math.floor(
+                            Math.random() * 4
+                        )
+                };
+            }
+        }
+
+
+        /*
+           Başlangıçta çözülmüşse
+           bir parçayı daha döndür.
+        */
+
+        if (isCurrentPuzzleSolved()) {
+
+            const row =
+                Math.floor(
+                    Math.random() * size
+                );
+
+            const col =
+                Math.floor(
+                    Math.random() * size
+                );
+
+            tiles[row][col].rotation =
+                (
+                    tiles[row][col].rotation +
+                    1
+                ) % 4;
+        }
+
+
+        return;
+    }
+}
+
+
+/* =========================================
+   PARÇANIN GERÇEK YÖNLERİ
+   ========================================= */
 
 function getConnections(tile) {
 
     let result =
-        [...tile.baseConnections];
+        [...tile.solution];
 
 
     for (
@@ -461,17 +606,19 @@ function getConnections(tile) {
             });
     }
 
+
     return result;
 }
 
 
-// ========================================
-// TAHTAYI ÇİZ
-// ========================================
+/* =========================================
+   TAHTAYI ÇİZ
+   ========================================= */
 
 function renderBoard() {
 
     board.innerHTML = "";
+
 
     board.style.gridTemplateColumns =
         `repeat(${size}, 1fr)`;
@@ -480,12 +627,12 @@ function renderBoard() {
         `repeat(${size}, 1fr)`;
 
 
-    for (let r = 0; r < size; r++) {
+    for (let row = 0; row < size; row++) {
 
-        for (let c = 0; c < size; c++) {
+        for (let col = 0; col < size; col++) {
 
             const data =
-                tiles[r][c];
+                tiles[row][col];
 
 
             const tile =
@@ -495,8 +642,8 @@ function renderBoard() {
 
             tile.className = "tile";
 
-            tile.dataset.row = r;
-            tile.dataset.col = c;
+            tile.dataset.row = row;
+            tile.dataset.col = col;
 
 
             if (data.type === "source") {
@@ -523,7 +670,8 @@ function renderBoard() {
 
 
             /*
-               Döndürme
+               Tıklayınca görsel olarak
+               90° dönecek.
             */
 
             inner.style.transform =
@@ -531,12 +679,13 @@ function renderBoard() {
 
 
             /*
-               Temel yolları çiz.
+               Temel çözüm bağlantılarını çiz.
+               Dönüşü inner yapıyor.
             */
 
             for (
                 const direction
-                of data.baseConnections
+                of data.solution
             ) {
 
                 const connection =
@@ -575,19 +724,23 @@ function renderBoard() {
 
 
             /*
-               Her basışta 90 derece
+               HER BASIŞTA 90°
             */
 
             tile.addEventListener(
                 "click",
                 () => {
 
-                    if (solved)
+                    if (solved) {
                         return;
+                    }
 
 
                     data.rotation =
-                        (data.rotation + 1) % 4;
+                        (
+                            data.rotation +
+                            1
+                        ) % 4;
 
 
                     moves++;
@@ -595,9 +748,9 @@ function renderBoard() {
 
                     renderBoard();
 
-                    checkConnections();
-
                     updateUI();
+
+                    checkNetwork();
                 }
             );
 
@@ -608,19 +761,40 @@ function renderBoard() {
 }
 
 
-// ========================================
-// OTOMATİK BAĞLANTI SİSTEMİ
-// ========================================
+/* =========================================
+   IŞIK AĞINI HESAPLA
+   ========================================= */
 
-function checkConnections() {
+function checkNetwork() {
 
-    const visited = new Set();
+    /*
+       Önce bütün ışıkları temizle.
+    */
+
+    document
+        .querySelectorAll(".tile")
+        .forEach(tile => {
+
+            tile.classList.remove(
+                "lit"
+            );
+
+            tile.classList.remove(
+                "reached"
+            );
+        });
+
+
+    const source =
+        findSource();
+
+
+    const visited =
+        new Set();
+
 
     const queue = [
-        {
-            row: findSource().row,
-            col: findSource().col
-        }
+        source
     ];
 
 
@@ -629,8 +803,9 @@ function checkConnections() {
         const current =
             queue.shift();
 
+
         const currentKey =
-            key(
+            cellKey(
                 current.row,
                 current.col
             );
@@ -668,7 +843,7 @@ function checkConnections() {
 
 
         /*
-           Bağlanan parçayı ışıklandır.
+           Bağlanan parçayı yak.
         */
 
         if (element) {
@@ -680,7 +855,25 @@ function checkConnections() {
 
 
         /*
-           Komşular
+           HEDEF
+        */
+
+        if (
+            currentTile.type ===
+            "target"
+        ) {
+
+            if (element) {
+
+                element.classList.add(
+                    "reached"
+                );
+            }
+        }
+
+
+        /*
+           Komşuları kontrol et.
         */
 
         for (
@@ -690,6 +883,207 @@ function checkConnections() {
 
             const [dr, dc] =
                 DELTA[direction];
+
+
+            const nextRow =
+                current.row + dr;
+
+            const nextCol =
+                current.col + dc;
+
+
+            if (
+                nextRow < 0 ||
+                nextRow >= size ||
+                nextCol < 0 ||
+                nextCol >= size
+            ) {
+                continue;
+            }
+
+
+            const nextTile =
+                tiles[
+                    nextRow
+                ][
+                    nextCol
+                ];
+
+
+            const nextConnections =
+                getConnections(
+                    nextTile
+                );
+
+
+            /*
+               İki taraf da birbirine
+               bakıyorsa bağlantı var.
+            */
+
+            if (
+                nextConnections.includes(
+                    OPPOSITE[direction]
+                )
+            ) {
+
+                queue.push({
+                    row: nextRow,
+                    col: nextCol
+                });
+            }
+        }
+    }
+
+
+    /*
+       Bağlantı yüzdesi
+    */
+
+    const total =
+        size * size;
+
+
+    const connected =
+        visited.size;
+
+
+    const percent =
+        Math.round(
+            (connected / total) * 100
+        );
+
+
+    lightStatus.textContent =
+        `${percent}%`;
+
+
+    if (percent === 100) {
+
+        levelComplete();
+
+        return;
+    }
+
+
+    lightStatus.classList.remove(
+        "on"
+    );
+
+
+    message.textContent =
+        `${connected} / ${total} kare bağlı`;
+
+    message.classList.remove(
+        "success"
+    );
+}
+
+
+/* =========================================
+   KAYNAĞI BUL
+   ========================================= */
+
+function findSource() {
+
+    for (let row = 0; row < size; row++) {
+
+        for (let col = 0; col < size; col++) {
+
+            if (
+                tiles[row][col].type ===
+                "source"
+            ) {
+
+                return {
+                    row,
+                    col
+                };
+            }
+        }
+    }
+
+
+    return {
+        row: 0,
+        col: 0
+    };
+}
+
+
+/* =========================================
+   HEDEFİN BAĞLANIP BAĞLANMADIĞINI BUL
+   ========================================= */
+
+function isTargetConnected() {
+
+    const source =
+        findSource();
+
+
+    const target =
+        findTargetPosition();
+
+
+    const visited =
+        new Set();
+
+
+    const queue = [
+        source
+    ];
+
+
+    while (queue.length > 0) {
+
+        const current =
+            queue.shift();
+
+
+        const currentKey =
+            cellKey(
+                current.row,
+                current.col
+            );
+
+
+        if (
+            visited.has(currentKey)
+        ) {
+            continue;
+        }
+
+
+        visited.add(currentKey);
+
+
+        if (
+            current.row === target.row &&
+            current.col === target.col
+        ) {
+
+            return true;
+        }
+
+
+        const currentConnections =
+            getConnections(
+                tiles[
+                    current.row
+                ][
+                    current.col
+                ]
+            );
+
+
+        for (
+            const direction
+            of currentConnections
+        ) {
+
+            const [dr, dc] =
+                DELTA[direction];
+
 
             const nr =
                 current.row + dr;
@@ -708,20 +1102,11 @@ function checkConnections() {
             }
 
 
-            const nextTile =
-                tiles[nr][nc];
-
-
             const nextConnections =
                 getConnections(
-                    nextTile
+                    tiles[nr][nc]
                 );
 
-
-            /*
-               İki yol aynı noktaya
-               bakıyorsa otomatik bağlanır.
-            */
 
             if (
                 nextConnections.includes(
@@ -738,76 +1123,44 @@ function checkConnections() {
     }
 
 
-    const connected =
-        visited.size;
-
-    const total =
-        size * size;
-
-
-    const percent =
-        Math.round(
-            (connected / total) * 100
-        );
-
-
-    /*
-       Bağlantı yüzdesini göster.
-    */
-
-    if (percent === 100) {
-
-        levelComplete();
-
-    }
-    else {
-
-        lightStatus.textContent =
-            `${percent}%`;
-
-        lightStatus.classList.remove(
-            "on"
-        );
-
-        message.textContent =
-            `${connected} / ${total} kare bağlı`;
-    }
+    return false;
 }
 
 
-// ========================================
-// KAYNAĞI BUL
-// ========================================
+/* =========================================
+   HEDEF KONUMU
+   ========================================= */
 
-function findSource() {
+function findTargetPosition() {
 
-    for (let r = 0; r < size; r++) {
+    for (let row = 0; row < size; row++) {
 
-        for (let c = 0; c < size; c++) {
+        for (let col = 0; col < size; col++) {
 
             if (
-                tiles[r][c].type ===
-                "source"
+                tiles[row][col].type ===
+                "target"
             ) {
 
                 return {
-                    row: r,
-                    col: c
+                    row,
+                    col
                 };
             }
         }
     }
 
+
     return {
-        row: 0,
-        col: 0
+        row: size - 1,
+        col: size - 1
     };
 }
 
 
-// ========================================
-// KARO ELEMENTİ
-// ========================================
+/* =========================================
+   ELEMENT BUL
+   ========================================= */
 
 function getTileElement(row, col) {
 
@@ -817,13 +1170,146 @@ function getTileElement(row, col) {
 }
 
 
-// ========================================
-// TAMAMLANMA
-// ========================================
+/* =========================================
+   BAŞLANGIÇTA ÇÖZÜLÜ MÜ?
+   ========================================= */
+
+function isCurrentPuzzleSolved() {
+
+    const source =
+        findSource();
+
+
+    const target =
+        findTargetPosition();
+
+
+    const visited =
+        new Set();
+
+
+    const queue = [
+        source
+    ];
+
+
+    while (queue.length > 0) {
+
+        const current =
+            queue.shift();
+
+
+        const currentKey =
+            cellKey(
+                current.row,
+                current.col
+            );
+
+
+        if (
+            visited.has(currentKey)
+        ) {
+            continue;
+        }
+
+
+        visited.add(currentKey);
+
+
+        if (
+            current.row === target.row &&
+            current.col === target.col
+        ) {
+
+            return true;
+        }
+
+
+        const connections =
+            getConnections(
+                tiles[
+                    current.row
+                ][
+                    current.col
+                ]
+            );
+
+
+        for (
+            const direction
+            of connections
+        ) {
+
+            const [dr, dc] =
+                DELTA[direction];
+
+
+            const nr =
+                current.row + dr;
+
+            const nc =
+                current.col + dc;
+
+
+            if (
+                nr < 0 ||
+                nr >= size ||
+                nc < 0 ||
+                nc >= size
+            ) {
+                continue;
+            }
+
+
+            const next =
+                tiles[nr][nc];
+
+
+            const nextConnections =
+                getConnections(next);
+
+
+            if (
+                nextConnections.includes(
+                    OPPOSITE[direction]
+                )
+            ) {
+
+                queue.push({
+                    row: nr,
+                    col: nc
+                });
+            }
+        }
+    }
+
+
+    return false;
+}
+
+
+/* =========================================
+   BÖLÜM TAMAMLANDI
+   ========================================= */
 
 function levelComplete() {
 
+    if (solved) {
+        return;
+    }
+
+
+    /*
+       Hedef gerçekten bağlı mı?
+    */
+
+    if (!isTargetConnected()) {
+        return;
+    }
+
+
     solved = true;
+
 
     lightStatus.textContent =
         "100%";
@@ -834,7 +1320,7 @@ function levelComplete() {
 
 
     message.textContent =
-        `🎉 SEVİYE ${level} TAMAMLANDI!`;
+        `🎉 Seviye ${level} tamamlandı!`;
 
     message.classList.add(
         "success"
@@ -852,8 +1338,8 @@ function levelComplete() {
 
 
     /*
-       1.5 saniye sonra sonraki
-       seviyeye geç.
+       Biraz bekle,
+       sonraki seviyeye geç.
     */
 
     setTimeout(() => {
@@ -862,33 +1348,33 @@ function levelComplete() {
 
         startLevel();
 
-    }, 1500);
+    }, 1400);
 }
 
 
-// ========================================
-// YILDIZ
-// ========================================
+/* =========================================
+   YILDIZ
+   ========================================= */
 
 function calculateStars() {
 
+    const optimal =
+        size * size;
+
+
     let result = 1;
 
-    const goodMoves =
-        size * size * 2;
 
-
-    if (moves <= goodMoves) {
+    if (moves <= optimal * 1.3) {
 
         result = 3;
 
     }
     else if (
-        moves <= goodMoves * 1.5
+        moves <= optimal * 2
     ) {
 
         result = 2;
-
     }
 
 
@@ -897,25 +1383,9 @@ function calculateStars() {
 }
 
 
-// ========================================
-// ÇÖZÜLMÜŞ MÜ?
-// ========================================
-
-function isSolved() {
-
-    /*
-       Geçici kontrol.
-       Gerçek kontrol checkConnections
-       tarafından yapılır.
-    */
-
-    return false;
-}
-
-
-// ========================================
-// ARAYÜZ
-// ========================================
+/* =========================================
+   ARAYÜZ
+   ========================================= */
 
 function updateUI() {
 
@@ -931,6 +1401,7 @@ function updateUI() {
     completedLevel.textContent =
         level;
 
+
     if (!solved) {
 
         stars.textContent =
@@ -939,9 +1410,9 @@ function updateUI() {
 }
 
 
-// ========================================
-// SEVİYE BAŞLAT
-// ========================================
+/* =========================================
+   SEVİYE BAŞLAT
+   ========================================= */
 
 function startLevel() {
 
@@ -951,6 +1422,7 @@ function startLevel() {
     moves = 0;
 
     solved = false;
+
 
     message.classList.remove(
         "success"
@@ -963,13 +1435,13 @@ function startLevel() {
 
     updateUI();
 
-    checkConnections();
+    checkNetwork();
 }
 
 
-// ========================================
-// YENİDEN BAŞLAT
-// ========================================
+/* =========================================
+   YENİDEN BAŞLAT
+   ========================================= */
 
 resetButton.addEventListener(
     "click",
@@ -981,8 +1453,8 @@ resetButton.addEventListener(
 );
 
 
-// ========================================
-// BAŞLAT
-// ========================================
+/* =========================================
+   OYUNU BAŞLAT
+   ========================================= */
 
 startLevel();
