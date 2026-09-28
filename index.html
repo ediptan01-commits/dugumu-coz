@@ -66,7 +66,18 @@
 
         </header>
 
+<div class="menu-row">
 
+    <button id="shopButton" type="button">
+        🏪 Mağaza
+    </button>
+
+    <div class="coin-display">
+        🪙 <span id="menuGold">0</span>
+    </div>
+
+</div>
+        
         <!-- OYUN ALANI -->
 
         <section class="game-panel">
@@ -134,6 +145,86 @@
             </div>
 
         </section>
+
+        <div id="shopModal" class="shop-modal" hidden>
+
+    <div class="shop-box">
+
+        <div class="shop-header">
+            <h2>🏪 MAĞAZA</h2>
+
+            <button id="closeShop" type="button">
+                ✕
+            </button>
+        </div>
+
+        <div class="shop-gold">
+            🪙 <span id="shopGold">0</span>
+        </div>
+
+        <h3>🎨 Tahta Temaları</h3>
+
+        <div class="shop-items">
+
+            <button class="shop-item"
+                    data-item="neon"
+                    data-price="300">
+                🌌
+                <strong>Neon</strong>
+                <span>300 🪙</span>
+            </button>
+
+            <button class="shop-item"
+                    data-item="ocean"
+                    data-price="500">
+                🌊
+                <strong>Okyanus</strong>
+                <span>500 🪙</span>
+            </button>
+
+            <button class="shop-item"
+                    data-item="fire"
+                    data-price="750">
+                🔥
+                <strong>Volkan</strong>
+                <span>750 🪙</span>
+            </button>
+
+        </div>
+
+        <h3>💡 Işıklar</h3>
+
+        <div class="shop-items">
+
+            <button class="shop-item"
+                    data-item="blueLight"
+                    data-price="400">
+                🔵
+                <strong>Mavi Enerji</strong>
+                <span>400 🪙</span>
+            </button>
+
+            <button class="shop-item"
+                    data-item="purpleLight"
+                    data-price="600">
+                🟣
+                <strong>Mor Enerji</strong>
+                <span>600 🪙</span>
+            </button>
+
+            <button class="shop-item"
+                    data-item="electricLight"
+                    data-price="900">
+                ⚡
+                <strong>Elektrik</strong>
+                <span>900 🪙</span>
+            </button>
+
+        </div>
+
+    </div>
+
+        </div>
 
 
         <!-- ALT BİLGİ -->
