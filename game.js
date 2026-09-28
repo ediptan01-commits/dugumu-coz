@@ -1,376 +1,550 @@
-alert("GAME.JS ÇALIŞIYOR");
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+// =========================================
+// IŞIK YOLLARI - OYUN MOTORU
+// =========================================
 
-const moveCountEl = document.getElementById("moveCount");
-const crossingCountEl = document.getElementById("crossingCount");
-const levelNumberEl = document.getElementById("levelNumber");
+const board = document.getElementById("puzzleBoard");
+const levelNumber = document.getElementById("levelNumber");
+const lightStatus = document.getElementById("lightStatus");
+const moveCount = document.getElementById("moveCount");
+const completedLevel = document.getElementById("completedLevel");
+const totalMoves = document.getElementById("totalMoves");
+const stars = document.getElementById("stars");
+const message = document.getElementById("message");
 const resetButton = document.getElementById("resetButton");
 
-let ropes = [];
-let selected = null;
+
+// =========================================
+// OYUN AYARLARI
+// =========================================
+
+const SIZE = 4;
+
+let currentLevel = 1;
 let moves = 0;
-let gameFinished = false;
+let solved = false;
 
-const NODE_RADIUS = 18;
+let tiles = [];
 
-function resizeCanvas() {
-    const rect = canvas.getBoundingClientRect();
 
-    const width = Math.max(300, Math.floor(rect.width));
-    const height = Math.max(300, Math.floor(rect.height));
+// =========================================
+// YÖNLER
+// =========================================
 
-    const dpr = window.devicePixelRatio || 1;
+const DIRECTIONS = {
+    N: { row: -1, col: 0 },
+    E: { row: 0, col: 1 },
+    S: { row: 1, col: 0 },
+    W: { row: 0, col: -1 }
+};
 
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
+const OPPOSITE = {
+    N: "S",
+    E: "W",
+    S: "N",
+    W: "E"
+};
 
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    draw();
+// =========================================
+// BÖLÜM 1
+// =========================================
+//
+// Yol:
+//
+// 💡 → ─ → ─ → ┐
+//              ↓
+// ┌ → ─ → ─ → ↓
+// ↑            ↓
+// ↑            ↓
+// └ ← ← ← ← ← 🎯
+//
+// =========================================
+
+const level1 = [
+    [
+        { type: "source", rotation: 0 },
+        { type: "straight", rotation: 0 },
+        { type: "straight", rotation: 0 },
+        { type: "corner", rotation: 0 }
+    ],
+
+    [
+        { type: "corner", rotation: 2 },
+        { type: "straight", rotation: 0 },
+        { type: "straight", rotation: 0 },
+        { type: "straight", rotation: 1 }
+    ],
+
+    [
+        { type: "straight", rotation: 1 },
+        { type: "straight", rotation: 1 },
+        { type: "straight", rotation: 1 },
+        { type: "straight", rotation: 1 }
+    ],
+
+    [
+        { type: "corner", rotation: 2 },
+        { type: "straight", rotation: 0 },
+        { type: "straight", rotation: 0 },
+        { type: "target", rotation: 0 }
+    ]
+];
+
+
+// =========================================
+// PARÇA BAĞLANTILARI
+// =========================================
+
+function getConnections(type, rotation) {
+
+    let connections = [];
+
+    if (type === "straight") {
+        connections = ["E", "W"];
+    }
+
+    if (type === "corner") {
+        connections = ["N", "E"];
+    }
+
+    if (type === "source") {
+        connections = ["E"];
+    }
+
+    if (type === "target") {
+        connections = ["W"];
+    }
+
+    // Rotasyon uygula
+    for (let i = 0; i < rotation; i++) {
+        connections = connections.map(direction => {
+
+            if (direction === "N") return "E";
+            if (direction === "E") return "S";
+            if (direction === "S") return "W";
+            if (direction === "W") return "N";
+
+        });
+    }
+
+    return connections;
 }
 
-function createLevel() {
 
-    const width = Math.max(300, canvas.clientWidth);
-    const height = Math.max(300, canvas.clientHeight);
+// =========================================
+// OYUNU BAŞLAT
+// =========================================
 
-    ropes = [
-        {
-            color: "#ff5b5b",
-            start: {
-                x: width * 0.18,
-                y: height * 0.20
-            },
-            end: {
-                x: width * 0.82,
-                y: height * 0.80
-            }
-        },
-
-        {
-            color: "#4d9cff",
-            start: {
-                x: width * 0.82,
-                y: height * 0.20
-            },
-            end: {
-                x: width * 0.18,
-                y: height * 0.80
-            }
-        }
-    ];
+function startGame() {
 
     moves = 0;
-    gameFinished = false;
+    solved = false;
+
+    tiles = JSON.parse(JSON.stringify(level1));
+
+    // Bulmacayı karıştır
+    scrambleBoard();
 
     updateUI();
-    draw();
+
+    renderBoard();
+
+    checkLight();
 }
 
-function draw() {
 
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
+// =========================================
+// BULMACAYI KARIŞTIR
+// =========================================
 
-    ctx.clearRect(0, 0, width, height);
+function scrambleBoard() {
 
-    drawBackground(width, height);
+    for (let row = 0; row < SIZE; row++) {
 
-    for (const rope of ropes) {
-        drawRope(
-            rope.start,
-            rope.end,
-            rope.color
-        );
-    }
+        for (let col = 0; col < SIZE; col++) {
 
-    for (const rope of ropes) {
-        drawNode(rope.start, rope.color);
-        drawNode(rope.end, rope.color);
-    }
-}
+            const tile = tiles[row][col];
 
-function drawBackground(width, height) {
+            if (
+                tile.type !== "source" &&
+                tile.type !== "target"
+            ) {
 
-    ctx.fillStyle = "#11182c";
-    ctx.fillRect(0, 0, width, height);
+                tile.rotation =
+                    Math.floor(Math.random() * 4);
 
-    ctx.strokeStyle = "rgba(255,255,255,0.05)";
-    ctx.lineWidth = 1;
-
-    const gap = 35;
-
-    for (let x = 0; x < width; x += gap) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
-    }
-
-    for (let y = 0; y < height; y += gap) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-    }
-}
-
-function drawRope(start, end, color) {
-
-    // Gölge
-    ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(end.x, end.y);
-
-    ctx.lineWidth = 14;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "rgba(0,0,0,0.35)";
-    ctx.stroke();
-
-    // İp
-    ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(end.x, end.y);
-
-    ctx.lineWidth = 8;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = color;
-    ctx.stroke();
-}
-
-function drawNode(point, color) {
-
-    // Dış halka
-    ctx.beginPath();
-    ctx.arc(
-        point.x,
-        point.y,
-        NODE_RADIUS + 7,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fillStyle = "rgba(255,255,255,0.12)";
-    ctx.fill();
-
-    // Düğüm
-    ctx.beginPath();
-    ctx.arc(
-        point.x,
-        point.y,
-        NODE_RADIUS,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fillStyle = "#ffffff";
-    ctx.fill();
-
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = color;
-    ctx.stroke();
-}
-
-function getPosition(event) {
-
-    const rect =
-        canvas.getBoundingClientRect();
-
-    return {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top
-    };
-}
-
-function findNode(position) {
-
-    for (const rope of ropes) {
-
-        const nodes = [
-            {
-                rope: rope,
-                point: rope.start,
-                type: "start"
-            },
-            {
-                rope: rope,
-                point: rope.end,
-                type: "end"
-            }
-        ];
-
-        for (const node of nodes) {
-
-            const distance = Math.hypot(
-                node.point.x - position.x,
-                node.point.y - position.y
-            );
-
-            if (distance < NODE_RADIUS + 20) {
-                return node;
             }
         }
     }
 
-    return null;
+    // Başlangıçta çözülmüş olma ihtimalini engelle
+    solved = false;
 }
 
-canvas.addEventListener("pointerdown", function(event) {
 
-    if (gameFinished) {
+// =========================================
+// TAHTAYI OLUŞTUR
+// =========================================
+
+function renderBoard() {
+
+    board.innerHTML = "";
+
+    for (let row = 0; row < SIZE; row++) {
+
+        for (let col = 0; col < SIZE; col++) {
+
+            const tileData = tiles[row][col];
+
+            const tile = document.createElement("button");
+
+            tile.className = "tile";
+
+            tile.type = "button";
+
+            tile.dataset.row = row;
+            tile.dataset.col = col;
+
+            // Özel parçalar
+            if (tileData.type === "source") {
+                tile.classList.add("source");
+            }
+
+            if (tileData.type === "target") {
+                tile.classList.add("target");
+            }
+
+            // İç alan
+            const inner = document.createElement("div");
+
+            inner.className = "tile-inner";
+
+            // Bağlantıları oluştur
+            const connections =
+                getConnections(
+                    tileData.type,
+                    tileData.rotation
+                );
+
+            connections.forEach(direction => {
+
+                const connection =
+                    document.createElement("div");
+
+                connection.className =
+                    "connection";
+
+                connection.dataset.direction =
+                    direction;
+
+                const rotation =
+                    getDirectionRotation(direction);
+
+                connection.style.transform =
+                    `translate(-50%, -100%) rotate(${rotation}deg)`;
+
+                inner.appendChild(connection);
+
+            });
+
+            tile.appendChild(inner);
+
+            // Tıklayınca döndür
+            tile.addEventListener(
+                "click",
+                () => rotateTile(row, col)
+            );
+
+            board.appendChild(tile);
+        }
+    }
+}
+
+
+// =========================================
+// YÖN AÇISI
+// =========================================
+
+function getDirectionRotation(direction) {
+
+    if (direction === "N") return 0;
+    if (direction === "E") return 90;
+    if (direction === "S") return 180;
+    if (direction === "W") return 270;
+
+    return 0;
+}
+
+
+// =========================================
+// PARÇAYI DÖNDÜR
+// =========================================
+
+function rotateTile(row, col) {
+
+    if (solved) return;
+
+    const tile = tiles[row][col];
+
+    // Kaynak ve hedef dönmesin
+    if (
+        tile.type === "source" ||
+        tile.type === "target"
+    ) {
         return;
     }
 
-    const position = getPosition(event);
-
-    selected = findNode(position);
-
-    if (selected) {
-        canvas.setPointerCapture(event.pointerId);
-    }
-});
-
-canvas.addEventListener("pointermove", function(event) {
-
-    if (!selected) {
-        return;
-    }
-
-    const position = getPosition(event);
-
-    const margin = 25;
-
-    selected.point.x = Math.max(
-        margin,
-        Math.min(
-            canvas.clientWidth - margin,
-            position.x
-        )
-    );
-
-    selected.point.y = Math.max(
-        margin,
-        Math.min(
-            canvas.clientHeight - margin,
-            position.y
-        )
-    );
-
-    draw();
-
-    updateCrossings();
-});
-
-canvas.addEventListener("pointerup", function(event) {
-
-    if (!selected) {
-        return;
-    }
+    tile.rotation =
+        (tile.rotation + 1) % 4;
 
     moves++;
 
-    selected = null;
-
     updateUI();
 
-    checkComplete();
+    renderBoard();
 
-    try {
-        canvas.releasePointerCapture(event.pointerId);
-    } catch (error) {
-        // Dokunma zaten bırakılmışsa sorun yok.
-    }
-});
-
-function updateCrossings() {
-
-    let crossings = 0;
-
-    for (let i = 0; i < ropes.length; i++) {
-
-        for (let j = i + 1; j < ropes.length; j++) {
-
-            if (
-                intersects(
-                    ropes[i].start,
-                    ropes[i].end,
-                    ropes[j].start,
-                    ropes[j].end
-                )
-            ) {
-                crossings++;
-            }
-        }
-    }
-
-    crossingCountEl.textContent = crossings;
-
-    return crossings;
+    checkLight();
 }
 
-function intersects(a, b, c, d) {
 
-    function orientation(p, q, r) {
+// =========================================
+// IŞIĞI HESAPLA
+// =========================================
 
-        return (
-            (q.x - p.x) * (r.y - p.y) -
-            (q.y - p.y) * (r.x - p.x)
-        );
+function checkLight() {
+
+    // Önce bütün karoların ışığını temizle
+    document
+        .querySelectorAll(".tile")
+        .forEach(tile => {
+
+            tile.classList.remove("lit");
+            tile.classList.remove("reached");
+
+        });
+
+
+    const visited = new Set();
+
+    const queue = [
+        {
+            row: 0,
+            col: 0
+        }
+    ];
+
+
+    while (queue.length > 0) {
+
+        const current = queue.shift();
+
+        const key =
+            `${current.row}-${current.col}`;
+
+        if (visited.has(key)) {
+            continue;
+        }
+
+        visited.add(key);
+
+        const currentTile =
+            tiles[current.row][current.col];
+
+        const connections =
+            getConnections(
+                currentTile.type,
+                currentTile.rotation
+            );
+
+
+        // Ekrandaki karoyu bul
+        const element =
+            getTileElement(
+                current.row,
+                current.col
+            );
+
+        if (element) {
+            element.classList.add("lit");
+        }
+
+
+        // Hedefe ulaştık mı?
+        if (currentTile.type === "target") {
+
+            solved = true;
+
+            if (element) {
+                element.classList.add("reached");
+            }
+
+            levelComplete();
+
+            return;
+        }
+
+
+        // Bağlantıları kontrol et
+        connections.forEach(direction => {
+
+            const move =
+                DIRECTIONS[direction];
+
+            const nextRow =
+                current.row + move.row;
+
+            const nextCol =
+                current.col + move.col;
+
+
+            // Tahta dışına çıkma
+            if (
+                nextRow < 0 ||
+                nextRow >= SIZE ||
+                nextCol < 0 ||
+                nextCol >= SIZE
+            ) {
+                return;
+            }
+
+
+            const nextTile =
+                tiles[nextRow][nextCol];
+
+            const nextConnections =
+                getConnections(
+                    nextTile.type,
+                    nextTile.rotation
+                );
+
+
+            // Karşılıklı bağlantı var mı?
+            if (
+                nextConnections.includes(
+                    OPPOSITE[direction]
+                )
+            ) {
+
+                queue.push({
+                    row: nextRow,
+                    col: nextCol
+                });
+
+            }
+
+        });
+
     }
 
-    const o1 = orientation(a, b, c);
-    const o2 = orientation(a, b, d);
-    const o3 = orientation(c, d, a);
-    const o4 = orientation(c, d, b);
 
-    return (
-        o1 * o2 < 0 &&
-        o3 * o4 < 0
+    // Hedefe ulaşılmadı
+    lightStatus.textContent = "KAPALI";
+    lightStatus.classList.remove("on");
+
+    message.textContent =
+        "Parçaları döndür ve ışığı hedefe ulaştır.";
+
+    message.classList.remove("success");
+}
+
+
+// =========================================
+// KARO ELEMENTİNİ BUL
+// =========================================
+
+function getTileElement(row, col) {
+
+    return document.querySelector(
+        `.tile[data-row="${row}"][data-col="${col}"]`
     );
 }
 
-function checkComplete() {
 
-    const crossings = updateCrossings();
+// =========================================
+// BÖLÜM TAMAMLANDI
+// =========================================
 
-    if (crossings === 0 && !gameFinished) {
+function levelComplete() {
 
-        gameFinished = true;
+    lightStatus.textContent = "AÇIK";
 
-        setTimeout(function() {
+    lightStatus.classList.add("on");
 
-            alert(
-                "🎉 DÜĞÜM ÇÖZÜLDÜ!\n\n" +
-                "Hamle: " + moves
-            );
+    message.textContent =
+        `Tebrikler! Bölüm ${currentLevel} tamamlandı.`;
 
-        }, 150);
-    }
+    message.classList.add("success");
+
+    completedLevel.textContent =
+        currentLevel;
+
+    totalMoves.textContent =
+        moves;
+
+    calculateStars();
 }
+
+
+// =========================================
+// YILDIZ HESAPLA
+// =========================================
+
+function calculateStars() {
+
+    let earnedStars = 1;
+
+    if (moves <= 12) {
+        earnedStars = 3;
+    }
+    else if (moves <= 20) {
+        earnedStars = 2;
+    }
+
+    stars.textContent =
+        "⭐".repeat(earnedStars);
+}
+
+
+// =========================================
+// ARAYÜZÜ GÜNCELLE
+// =========================================
 
 function updateUI() {
 
-    moveCountEl.textContent = moves;
-    levelNumberEl.textContent = "1";
+    levelNumber.textContent =
+        currentLevel;
 
-    updateCrossings();
+    moveCount.textContent =
+        moves;
+
+    totalMoves.textContent =
+        moves;
+
+    completedLevel.textContent =
+        currentLevel;
+
+    stars.textContent =
+        "0";
+
+    lightStatus.textContent =
+        "KAPALI";
+
+    lightStatus.classList.remove("on");
 }
+
+
+// =========================================
+// YENİDEN BAŞLAT
+// =========================================
 
 resetButton.addEventListener(
     "click",
-    function() {
-        createLevel();
-    }
+    startGame
 );
 
-window.addEventListener(
-    "resize",
-    function() {
-        resizeCanvas();
-    }
-);
 
-// Oyunu başlat
-resizeCanvas();
-createLevel();
+// =========================================
+// OYUNU BAŞLAT
+// =========================================
+
+startGame();
