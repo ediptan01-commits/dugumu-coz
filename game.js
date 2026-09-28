@@ -91,12 +91,18 @@ shopItems.forEach((item) => {
             "true"
         );
 
-        localStorage.setItem(
-    "activeTheme",
-    itemId
-);
+        if (
+    itemId === "neon" ||
+    itemId === "ocean" ||
+    itemId === "fire"
+) {
+    localStorage.setItem(
+        "activeTheme",
+        itemId
+    );
 
-applyTheme();
+    applyTheme();
+        }
 
         item.querySelector("span").textContent =
             "✓ SAHİPSİN";
