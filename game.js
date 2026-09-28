@@ -192,9 +192,35 @@ function addGold(amount) {
 // İlk açılışta göster
 updateGoldUI();
 
-gold = 500;
+gold = 1000;
 saveProgress();
 updateGoldUI();
+
+function applyTheme() {
+
+    const activeTheme =
+        localStorage.getItem("activeTheme");
+
+    document.body.classList.remove(
+        "theme-ocean",
+        "theme-neon",
+        "theme-fire"
+    );
+
+    if (activeTheme === "ocean") {
+        document.body.classList.add("theme-ocean");
+    }
+
+    if (activeTheme === "neon") {
+        document.body.classList.add("theme-neon");
+    }
+
+    if (activeTheme === "fire") {
+        document.body.classList.add("theme-fire");
+    }
+}
+
+applyTheme();
 
 level = unlockedLevel;
 
