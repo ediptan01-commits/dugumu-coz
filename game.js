@@ -38,9 +38,6 @@ let savedGold = localStorage.getItem("isikYollariGold");
 
 let gold = Number(savedGold);
 
-gold = 500;
-updateGoldUI();
-
 if (!Number.isFinite(gold) || gold < 0) {
     gold = 0;
 }
