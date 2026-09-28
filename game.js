@@ -110,6 +110,8 @@ function addGold(amount) {
 // İlk açılışta göster
 updateGoldUI();
 
+level = unlockedLevel;
+
 /* =========================================
    TAHTA BOYUTU
    ========================================= */
@@ -1388,7 +1390,15 @@ function levelComplete() {
 
 
     solved = true;
+    
+// Bölüm ödülü
+addGold(50);
 
+// Bir sonraki bölümü aç
+if (level >= unlockedLevel) {
+    unlockedLevel = level + 1;
+    saveProgress();
+}
 
     lightStatus.textContent =
         "100%";
