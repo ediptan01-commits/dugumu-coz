@@ -60,6 +60,9 @@ const footerGold =
 const hintButton =
     document.getElementById("hintButton");
 
+const shopItems =
+    document.querySelectorAll(".shop-item");
+
 if (hintButton) {
     hintButton.addEventListener("click", () => {
 
