@@ -1620,3 +1620,46 @@ if (closeShop && shopModal) {
     };
 
 }
+
+// ================================
+// MAĞAZA SATIN ALMA SİSTEMİ
+// ================================
+
+const shopItems = document.querySelectorAll(".shop-item");
+
+shopItems.forEach((item) => {
+
+    item.addEventListener("click", () => {
+
+        const itemId = item.dataset.item;
+        const price = Number(item.dataset.price);
+
+        if (gold < price) {
+
+            message.textContent =
+                "❌ Yeterli altın yok.";
+
+            return;
+        }
+
+        gold -= price;
+
+        saveProgress();
+        updateGoldUI();
+
+        localStorage.setItem(
+            "owned_" + itemId,
+            "true"
+        );
+
+        item.classList.add("owned");
+
+        item.querySelector("span").textContent =
+            "✓ SAHİPSİN";
+
+        message.textContent =
+            "✅ Satın alındı!";
+
+    });
+
+});
