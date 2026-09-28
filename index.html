@@ -1,54 +1,166 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0b1020">
 
-    <title>Düğümü Çöz</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <link rel="stylesheet" href="./style.css">
+    <meta
+        name="theme-color"
+        content="#08111f"
+    >
+
+    <title>Işık Yolları</title>
+
+    <link
+        rel="stylesheet"
+        href="./style.css"
+    >
 </head>
+
 
 <body>
 
     <main class="game">
 
+        <!-- ÜST BİLGİ -->
+
         <header class="top-bar">
 
-            <div class="logo">
-                DÜĞÜMÜ ÇÖZ
+            <div class="brand">
+
+                <div class="brand-icon">
+                    ✦
+                </div>
+
+                <div>
+
+                    <h1>
+                        IŞIK YOLLARI
+                    </h1>
+
+                    <span>
+                        Mantık Bulmacası
+                    </span>
+
+                </div>
+
             </div>
 
-            <div class="level">
-                BÖLÜM
-                <span id="levelNumber">1</span>
+
+            <div class="level-box">
+
+                <span>
+                    BÖLÜM
+                </span>
+
+                <strong id="levelNumber">
+                    1
+                </strong>
+
             </div>
 
         </header>
 
 
-        <section class="game-area">
+        <!-- OYUN ALANI -->
 
-            <div class="instructions">
-                İpleri sürükle ve düğümü çöz.
+        <section class="game-panel">
+
+            <div class="game-info">
+
+                <div>
+
+                    <span>
+                        IŞIK
+                    </span>
+
+                    <strong id="lightStatus">
+                        KAPALI
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        HAMLE
+                    </span>
+
+                    <strong id="moveCount">
+                        0
+                    </strong>
+
+                </div>
+
             </div>
 
-            <canvas
-                id="gameCanvas"
-                aria-label="Düğüm çözme oyun alanı">
-            </canvas>
+
+            <!-- BULMACA TAHTASI -->
+
+            <div
+                id="puzzleBoard"
+                class="puzzle-board"
+                aria-label="Işık yolu bulmacası"
+            >
+
+                <!-- Parçalar JavaScript ile oluşturulacak -->
+
+            </div>
+
+
+            <div
+                id="message"
+                class="message"
+                aria-live="polite"
+            >
+                Parçaları döndür ve ışığı hedefe ulaştır.
+            </div>
+
+
+            <div class="controls">
+
+                <button
+                    id="resetButton"
+                    type="button"
+                >
+                    ↻ Yeniden Başlat
+                </button>
+
+            </div>
 
         </section>
 
+
+        <!-- ALT BİLGİ -->
 
         <footer class="bottom-bar">
 
             <div class="stat">
 
-                HAMLE
+                <span>
+                    BÖLÜM
+                </span>
 
-                <strong id="moveCount">
+                <strong id="completedLevel">
+                    1
+                </strong>
+
+            </div>
+
+
+            <div class="stat">
+
+                <span>
+                    HAMLE
+                </span>
+
+                <strong id="totalMoves">
                     0
                 </strong>
 
@@ -57,29 +169,25 @@
 
             <div class="stat">
 
-                KESİŞME
+                <span>
+                    ⭐
+                </span>
 
-                <strong id="crossingCount">
-                    1
+                <strong id="stars">
+                    0
                 </strong>
 
             </div>
-
-
-            <button
-                id="resetButton"
-                type="button">
-
-                YENİDEN BAŞLAT
-
-            </button>
 
         </footer>
 
     </main>
 
 
+    <!-- OYUN MOTORU -->
+
     <script src="./game.js"></script>
 
 </body>
+
 </html>
