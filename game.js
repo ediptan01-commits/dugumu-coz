@@ -192,6 +192,10 @@ function addGold(amount) {
 // İlk açılışta göster
 updateGoldUI();
 
+gold = 500;
+saveProgress();
+updateGoldUI();
+
 level = unlockedLevel;
 
 /* =========================================
