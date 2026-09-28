@@ -1,7 +1,3 @@
-// =========================================
-// IŞIK YOLLARI - OYUN MOTORU
-// =========================================
-
 const board = document.getElementById("puzzleBoard");
 const levelNumber = document.getElementById("levelNumber");
 const lightStatus = document.getElementById("lightStatus");
@@ -12,32 +8,29 @@ const stars = document.getElementById("stars");
 const message = document.getElementById("message");
 const resetButton = document.getElementById("resetButton");
 
-
-// =========================================
-// OYUN AYARLARI
-// =========================================
-
 const SIZE = 4;
 
-let currentLevel = 1;
 let moves = 0;
 let solved = false;
-
 let tiles = [];
 
+/*
+    Bağlantılar:
 
-// =========================================
-// YÖNLER
-// =========================================
+    N = Yukarı
+    E = Sağ
+    S = Aşağı
+    W = Sol
+*/
 
-const DIRECTIONS = {
+const directions = {
     N: { row: -1, col: 0 },
     E: { row: 0, col: 1 },
     S: { row: 1, col: 0 },
     W: { row: 0, col: -1 }
 };
 
-const OPPOSITE = {
+const opposite = {
     N: "S",
     E: "W",
     S: "N",
@@ -45,20 +38,9 @@ const OPPOSITE = {
 };
 
 
-// =========================================
-// BÖLÜM 1
-// =========================================
-//
-// Yol:
-//
-// 💡 → ─ → ─ → ┐
-//              ↓
-// ┌ → ─ → ─ → ↓
-// ↑            ↓
-// ↑            ↓
-// └ ← ← ← ← ← 🎯
-//
-// =========================================
+/* ========================================
+   BÖLÜM 1
+   ======================================== */
 
 const level1 = [
     [
@@ -91,9 +73,9 @@ const level1 = [
 ];
 
 
-// =========================================
-// PARÇA BAĞLANTILARI
-// =========================================
+/* ========================================
+   PARÇANIN BAĞLANTILARI
+   ======================================== */
 
 function getConnections(type, rotation) {
 
@@ -115,8 +97,8 @@ function getConnections(type, rotation) {
         connections = ["W"];
     }
 
-    // Rotasyon uygula
     for (let i = 0; i < rotation; i++) {
+
         connections = connections.map(direction => {
 
             if (direction === "N") return "E";
@@ -125,37 +107,39 @@ function getConnections(type, rotation) {
             if (direction === "W") return "N";
 
         });
+
     }
 
     return connections;
 }
 
 
-// =========================================
-// OYUNU BAŞLAT
-// =========================================
+/* ========================================
+   OYUNU BAŞLAT
+   ======================================== */
 
 function startGame() {
 
     moves = 0;
     solved = false;
 
-    tiles = JSON.parse(JSON.stringify(level1));
+    tiles = JSON.parse(
+        JSON.stringify(level1)
+    );
 
-    // Bulmacayı karıştır
     scrambleBoard();
 
-    updateUI();
-
     renderBoard();
+
+    updateUI();
 
     checkLight();
 }
 
 
-// =========================================
-// BULMACAYI KARIŞTIR
-// =========================================
+/* ========================================
+   KARIŞTIR
+   ======================================== */
 
 function scrambleBoard() {
 
@@ -163,28 +147,18 @@ function scrambleBoard() {
 
         for (let col = 0; col < SIZE; col++) {
 
-            const tile = tiles[row][col];
+            tiles[row][col].rotation =
+                Math.floor(Math.random() * 4);
 
-            if (
-                tile.type !== "source" &&
-                tile.type !== "target"
-            ) {
-
-                tile.rotation =
-                    Math.floor(Math.random() * 4);
-
-            }
         }
-    }
 
-    // Başlangıçta çözülmüş olma ihtimalini engelle
-    solved = false;
+    }
 }
 
 
-// =========================================
-// TAHTAYI OLUŞTUR
-// =========================================
+/* ========================================
+   TAHTAYI ÇİZ
+   ======================================== */
 
 function renderBoard() {
 
@@ -194,37 +168,43 @@ function renderBoard() {
 
         for (let col = 0; col < SIZE; col++) {
 
-            const tileData = tiles[row][col];
+            const data = tiles[row][col];
 
-            const tile = document.createElement("button");
-
-            tile.className = "tile";
+            const tile =
+                document.createElement("button");
 
             tile.type = "button";
+
+            tile.className = "tile";
 
             tile.dataset.row = row;
             tile.dataset.col = col;
 
-            // Özel parçalar
-            if (tileData.type === "source") {
+            if (data.type === "source") {
                 tile.classList.add("source");
             }
 
-            if (tileData.type === "target") {
+            if (data.type === "target") {
                 tile.classList.add("target");
             }
 
-            // İç alan
-            const inner = document.createElement("div");
+
+            const inner =
+                document.createElement("div");
 
             inner.className = "tile-inner";
 
-            // Bağlantıları oluştur
+
             const connections =
                 getConnections(
-                    tileData.type,
-                    tileData.rotation
+                    data.type,
+                    data.rotation
                 );
+
+
+            /*
+                HER BAĞLANTI AYRI BİR KOL
+            */
 
             connections.forEach(direction => {
 
@@ -237,23 +217,28 @@ function renderBoard() {
                 connection.dataset.direction =
                     direction;
 
-                const rotation =
-                    getDirectionRotation(direction);
+                const angle =
+                    getAngle(direction);
 
                 connection.style.transform =
-                    `translate(-50%, -100%) rotate(${rotation}deg)`;
+                    `translate(-50%, -100%) rotate(${angle}deg)`;
 
                 inner.appendChild(connection);
 
             });
 
+
             tile.appendChild(inner);
 
-            // Tıklayınca döndür
+            /*
+                HER BASIŞTA DÖN
+            */
+
             tile.addEventListener(
                 "click",
                 () => rotateTile(row, col)
             );
+
 
             board.appendChild(tile);
         }
@@ -261,59 +246,65 @@ function renderBoard() {
 }
 
 
-// =========================================
-// YÖN AÇISI
-// =========================================
+/* ========================================
+   YÖN AÇISI
+   ======================================== */
 
-function getDirectionRotation(direction) {
+function getAngle(direction) {
 
-    if (direction === "N") return 0;
-    if (direction === "E") return 90;
-    if (direction === "S") return 180;
-    if (direction === "W") return 270;
+    switch (direction) {
 
-    return 0;
+        case "N":
+            return 0;
+
+        case "E":
+            return 90;
+
+        case "S":
+            return 180;
+
+        case "W":
+            return 270;
+
+        default:
+            return 0;
+    }
 }
 
 
-// =========================================
-// PARÇAYI DÖNDÜR
-// =========================================
+/* ========================================
+   PARÇAYI DÖNDÜR
+   ======================================== */
 
 function rotateTile(row, col) {
 
-    if (solved) return;
-
-    const tile = tiles[row][col];
-
-    // Kaynak ve hedef dönmesin
-    if (
-        tile.type === "source" ||
-        tile.type === "target"
-    ) {
+    if (solved) {
         return;
     }
 
-    tile.rotation =
-        (tile.rotation + 1) % 4;
+    /*
+       HER PARÇA DÖNEBİLİR
+    */
+
+    tiles[row][col].rotation =
+        (tiles[row][col].rotation + 1) % 4;
 
     moves++;
 
-    updateUI();
-
     renderBoard();
+
+    updateUI();
 
     checkLight();
 }
 
 
-// =========================================
-// IŞIĞI HESAPLA
-// =========================================
+/* ========================================
+   IŞIĞI HESAPLA
+   ======================================== */
 
 function checkLight() {
 
-    // Önce bütün karoların ışığını temizle
     document
         .querySelectorAll(".tile")
         .forEach(tile => {
@@ -336,10 +327,12 @@ function checkLight() {
 
     while (queue.length > 0) {
 
-        const current = queue.shift();
+        const current =
+            queue.shift();
 
         const key =
             `${current.row}-${current.col}`;
+
 
         if (visited.has(key)) {
             continue;
@@ -347,8 +340,10 @@ function checkLight() {
 
         visited.add(key);
 
+
         const currentTile =
             tiles[current.row][current.col];
+
 
         const connections =
             getConnections(
@@ -357,19 +352,22 @@ function checkLight() {
             );
 
 
-        // Ekrandaki karoyu bul
         const element =
             getTileElement(
                 current.row,
                 current.col
             );
 
+
         if (element) {
             element.classList.add("lit");
         }
 
 
-        // Hedefe ulaştık mı?
+        /*
+            HEDEFE ULAŞILDI
+        */
+
         if (currentTile.type === "target") {
 
             solved = true;
@@ -384,11 +382,15 @@ function checkLight() {
         }
 
 
-        // Bağlantıları kontrol et
+        /*
+            BAĞLANTILARI TAKİP ET
+        */
+
         connections.forEach(direction => {
 
             const move =
-                DIRECTIONS[direction];
+                directions[direction];
+
 
             const nextRow =
                 current.row + move.row;
@@ -397,7 +399,6 @@ function checkLight() {
                 current.col + move.col;
 
 
-            // Tahta dışına çıkma
             if (
                 nextRow < 0 ||
                 nextRow >= SIZE ||
@@ -411,6 +412,7 @@ function checkLight() {
             const nextTile =
                 tiles[nextRow][nextCol];
 
+
             const nextConnections =
                 getConnections(
                     nextTile.type,
@@ -418,10 +420,13 @@ function checkLight() {
                 );
 
 
-            // Karşılıklı bağlantı var mı?
+            /*
+                İKİ PARÇADA DA BAĞLANTI VARSA
+            */
+
             if (
                 nextConnections.includes(
-                    OPPOSITE[direction]
+                    opposite[direction]
                 )
             ) {
 
@@ -437,8 +442,9 @@ function checkLight() {
     }
 
 
-    // Hedefe ulaşılmadı
-    lightStatus.textContent = "KAPALI";
+    lightStatus.textContent =
+        "KAPALI";
+
     lightStatus.classList.remove("on");
 
     message.textContent =
@@ -448,9 +454,9 @@ function checkLight() {
 }
 
 
-// =========================================
-// KARO ELEMENTİNİ BUL
-// =========================================
+/* ========================================
+   KAROYU BUL
+   ======================================== */
 
 function getTileElement(row, col) {
 
@@ -460,23 +466,24 @@ function getTileElement(row, col) {
 }
 
 
-// =========================================
-// BÖLÜM TAMAMLANDI
-// =========================================
+/* ========================================
+   BÖLÜM TAMAMLANDI
+   ======================================== */
 
 function levelComplete() {
 
-    lightStatus.textContent = "AÇIK";
+    lightStatus.textContent =
+        "AÇIK";
 
     lightStatus.classList.add("on");
 
     message.textContent =
-        `Tebrikler! Bölüm ${currentLevel} tamamlandı.`;
+        `🎉 Tebrikler! Bölüm tamamlandı.`;
 
     message.classList.add("success");
 
     completedLevel.textContent =
-        currentLevel;
+        "1";
 
     totalMoves.textContent =
         moves;
@@ -485,34 +492,33 @@ function levelComplete() {
 }
 
 
-// =========================================
-// YILDIZ HESAPLA
-// =========================================
+/* ========================================
+   YILDIZ
+   ======================================== */
 
 function calculateStars() {
 
-    let earnedStars = 1;
+    let earned = 1;
 
     if (moves <= 12) {
-        earnedStars = 3;
+        earned = 3;
     }
     else if (moves <= 20) {
-        earnedStars = 2;
+        earned = 2;
     }
 
     stars.textContent =
-        "⭐".repeat(earnedStars);
+        "⭐".repeat(earned);
 }
 
 
-// =========================================
-// ARAYÜZÜ GÜNCELLE
-// =========================================
+/* ========================================
+   ARAYÜZ
+   ======================================== */
 
 function updateUI() {
 
-    levelNumber.textContent =
-        currentLevel;
+    levelNumber.textContent = "1";
 
     moveCount.textContent =
         moves;
@@ -521,21 +527,17 @@ function updateUI() {
         moves;
 
     completedLevel.textContent =
-        currentLevel;
+        "1";
 
-    stars.textContent =
-        "0";
-
-    lightStatus.textContent =
-        "KAPALI";
-
-    lightStatus.classList.remove("on");
+    if (!solved) {
+        stars.textContent = "0";
+    }
 }
 
 
-// =========================================
-// YENİDEN BAŞLAT
-// =========================================
+/* ========================================
+   YENİDEN BAŞLAT
+   ======================================== */
 
 resetButton.addEventListener(
     "click",
@@ -543,8 +545,8 @@ resetButton.addEventListener(
 );
 
 
-// =========================================
-// OYUNU BAŞLAT
-// =========================================
+/* ========================================
+   BAŞLAT
+   ======================================== */
 
 startGame();
