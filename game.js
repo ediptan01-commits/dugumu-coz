@@ -63,6 +63,44 @@ const hintButton =
 const shopItems =
     document.querySelectorAll(".shop-item");
 
+shopItems.forEach((item) => {
+
+    item.addEventListener("click", () => {
+
+        const price =
+            Number(item.dataset.price);
+
+        const itemId =
+            item.dataset.item;
+
+        if (gold < price) {
+
+            message.textContent =
+                "❌ Yeterli altın yok.";
+
+            return;
+        }
+
+        gold -= price;
+
+        saveProgress();
+        updateGoldUI();
+
+        localStorage.setItem(
+            "owned_" + itemId,
+            "true"
+        );
+
+        item.querySelector("span").textContent =
+            "✓ SAHİPSİN";
+
+        message.textContent =
+            "✅ Satın alındı!";
+
+    });
+
+});
+
 if (hintButton) {
     hintButton.addEventListener("click", () => {
 
