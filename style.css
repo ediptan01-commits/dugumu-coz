@@ -903,3 +903,178 @@ body.theme-ocean #resetButton {
 
     border-color: #1ac9ee;
 }
+
+/* =====================================
+   🌊 OKYANUS TEMASI - GELİŞMİŞ
+===================================== */
+
+body.theme-ocean {
+    background:
+        radial-gradient(circle at 20% 10%, rgba(0, 229, 255, .35), transparent 25%),
+        radial-gradient(circle at 80% 30%, rgba(0, 119, 255, .30), transparent 30%),
+        linear-gradient(160deg, #001827, #003b57 45%, #00131f);
+}
+
+/* Üst bölüm */
+body.theme-ocean .brand h1 {
+    color: #eaffff;
+    text-shadow: 0 0 15px rgba(71, 239, 255, .8);
+}
+
+body.theme-ocean .brand span {
+    color: #8defff;
+}
+
+body.theme-ocean .level-box {
+    background: linear-gradient(145deg, #063f5b, #021d30);
+    border: 1px solid #32e6ff;
+    box-shadow: 0 0 20px rgba(0, 220, 255, .25);
+}
+
+/* Ana panel */
+body.theme-ocean .game-panel {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(4, 100, 135, .95),
+            rgba(1, 27, 44, .98)
+        );
+
+    border-color: #18dfff;
+
+    box-shadow:
+        0 0 35px rgba(0, 220, 255, .22),
+        inset 0 0 35px rgba(0, 190, 255, .08);
+}
+
+/* Bilgi kutuları */
+body.theme-ocean .game-info > div {
+    background:
+        linear-gradient(145deg, #043b56, #021c2c);
+
+    border-color: #159fc5;
+
+    box-shadow:
+        inset 0 0 15px rgba(0, 210, 255, .08);
+}
+
+/* Tahta */
+body.theme-ocean .puzzle-board {
+    background:
+        radial-gradient(
+            circle at 50% 50%,
+            #075b79,
+            #012334 75%
+        );
+
+    border: 2px solid #25e8ff;
+
+    box-shadow:
+        inset 0 0 40px rgba(0, 220, 255, .25),
+        0 0 30px rgba(0, 220, 255, .20);
+}
+
+/* Kareler */
+body.theme-ocean .tile {
+    background:
+        linear-gradient(
+            145deg,
+            #087fa5,
+            #03435f
+        );
+
+    border-color: #1bb9df;
+
+    box-shadow:
+        inset 0 0 15px rgba(100, 235, 255, .12),
+        0 0 5px rgba(0, 190, 255, .12);
+}
+
+/* Kare üzerine hafif su parlaması */
+body.theme-ocean .tile-inner {
+    filter: drop-shadow(0 0 2px rgba(90, 235, 255, .15));
+}
+
+/* Normal yollar */
+body.theme-ocean .connection {
+    background: #56bcd7;
+
+    box-shadow:
+        inset 0 0 5px rgba(255,255,255,.25);
+}
+
+/* Işıklı kare */
+body.theme-ocean .tile.lit {
+    background:
+        radial-gradient(
+            circle at 50% 40%,
+            #19cbe9,
+            #056987 70%
+        );
+
+    border-color: #7df7ff;
+
+    box-shadow:
+        0 0 20px rgba(36, 235, 255, .65),
+        inset 0 0 25px rgba(108, 246, 255, .22);
+}
+
+/* Işıklı yollar */
+body.theme-ocean .tile.lit .connection {
+    background: #b8fbff;
+
+    box-shadow:
+        0 0 8px #6df4ff,
+        0 0 20px #00ddff,
+        0 0 35px rgba(0, 220, 255, .7);
+}
+
+/* Merkez noktası */
+body.theme-ocean .tile.lit .tile-inner::after {
+    background: #d9ffff;
+
+    box-shadow:
+        0 0 12px #7df8ff,
+        0 0 25px #00dfff;
+}
+
+/* Hedef */
+body.theme-ocean .tile.target {
+    border-color: #28e8cf;
+
+    box-shadow:
+        0 0 12px rgba(40, 232, 207, .3);
+}
+
+body.theme-ocean .tile.target.reached {
+    border-color: #7ffff0;
+
+    box-shadow:
+        0 0 25px rgba(55, 255, 226, .8);
+}
+
+/* Alt bölüm */
+body.theme-ocean .stat {
+    background:
+        linear-gradient(145deg, #04364e, #021c2b);
+
+    border-color: #117d9e;
+}
+
+/* Mesaj */
+body.theme-ocean .message {
+    background: #021c2c;
+    border-color: #126e8b;
+    color: #a8f7ff;
+}
+
+/* Yeniden başlat */
+body.theme-ocean #resetButton {
+    background:
+        linear-gradient(135deg, #087fa4, #03435f);
+
+    border-color: #25dfff;
+
+    box-shadow:
+        0 0 15px rgba(0, 220, 255, .18);
+}
