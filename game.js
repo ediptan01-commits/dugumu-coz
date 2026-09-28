@@ -60,6 +60,43 @@ const footerGold =
 const hintButton =
     document.getElementById("hintButton");
 
+if (hintButton) {
+    hintButton.addEventListener("click", () => {
+
+        if (gold < 100) {
+            message.textContent = "💰 İpucu için 100 altın gerekiyor.";
+            return;
+        }
+
+        gold -= 100;
+        saveProgress();
+        updateGoldUI();
+
+        message.textContent =
+            "💡 İpucu: Işığın ilerlemesi için bir parçayı döndür.";
+
+        // Henüz çözülmemiş ilk parçayı vurgula
+        const tileElements =
+            document.querySelectorAll(".tile");
+
+        for (const tile of tileElements) {
+
+            if (
+                !tile.classList.contains("source") &&
+                !tile.classList.contains("target") &&
+                !tile.classList.contains("lit")
+            ) {
+                tile.classList.add("hint");
+
+                setTimeout(() => {
+                    tile.classList.remove("hint");
+                }, 1500);
+
+                break;
+            }
+        }
+    });
+}
 
 // =========================================
 // KAYDET
