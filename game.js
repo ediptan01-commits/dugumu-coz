@@ -1,3 +1,4 @@
+alert("YENİ GAME.JS ÇALIŞIYOR");
 const board = document.getElementById("puzzleBoard");
 const levelNumber = document.getElementById("levelNumber");
 const lightStatus = document.getElementById("lightStatus");
