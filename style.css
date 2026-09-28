@@ -590,3 +590,20 @@ body {
         border-radius: 10px;
     }
 }
+
+.tile.hint {
+    animation: hintGlow 0.5s ease-in-out 3;
+    border-color: #ffd43b !important;
+}
+
+@keyframes hintGlow {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(255, 212, 59, 0);
+    }
+
+    50% {
+        transform: scale(1.08);
+        box-shadow: 0 0 25px rgba(255, 212, 59, 0.9);
+    }
+}
