@@ -8,7 +8,7 @@ const stars = document.getElementById("stars");
 const message = document.getElementById("message");
 const resetButton = document.getElementById("resetButton");
 
-const DIRECTIONS = ["N", "E", "S", "W"];
+const DIRS = ["N", "E", "S", "W"];
 
 const DELTA = {
     N: [-1, 0],
@@ -24,85 +24,53 @@ const OPPOSITE = {
     W: "E"
 };
 
-let size = 4;
 let level = 1;
+let size = 4;
 let moves = 0;
 let solved = false;
 let tiles = [];
 
 
 /* =========================================
-   SEVİYEYE GÖRE TAHTA BOYUTU
+   TAHTA BOYUTU
    ========================================= */
 
 function getBoardSize() {
 
-    if (level <= 5) return 4;
+    if (level <= 5) {
+        return 4;
+    }
 
-    if (level <= 10) return 5;
+    if (level <= 10) {
+        return 5;
+    }
 
-    if (level <= 15) return 6;
+    if (level <= 15) {
+        return 6;
+    }
 
     return 7;
 }
 
 
 /* =========================================
-   ANAHTAR
+   HÜCRE ANAHTARI
    ========================================= */
 
-function cellKey(row, col) {
+function key(row, col) {
     return `${row}-${col}`;
 }
 
 
 /* =========================================
-   KOMŞULAR
-   ========================================= */
-
-function getNeighbors(row, col) {
-
-    const result = [];
-
-    for (const direction of DIRECTIONS) {
-
-        const [dr, dc] =
-            DELTA[direction];
-
-        const nr = row + dr;
-        const nc = col + dc;
-
-        if (
-            nr >= 0 &&
-            nr < size &&
-            nc >= 0 &&
-            nc < size
-        ) {
-            result.push({
-                row: nr,
-                col: nc,
-                direction
-            });
-        }
-    }
-
-    return result;
-}
-
-
-/* =========================================
-   DİZİYİ KARIŞTIR
+   RASTGELE DİZİ
    ========================================= */
 
 function shuffle(array) {
 
     const result = [...array];
 
-    for (
-        let i = result.length - 1;
-        i > 0;
-        i--
-    ) {
+    for (let i = result.length - 1; i > 0; i--) {
 
         const j =
             Math.floor(
@@ -123,31 +91,65 @@ function shuffle(array) {
 
 
 /* =========================================
-   TAMAMEN BAĞLI AĞ OLUŞTUR
+   KOMŞULAR
    ========================================= */
 
-function createSolvedNetwork() {
+function getNeighbors(row, col) {
 
-    const connections = {};
+    const result = [];
+
+    for (const direction of DIRS) {
+
+        const [dr, dc] =
+            DELTA[direction];
+
+        const nr =
+            row + dr;
+
+        const nc =
+            col + dc;
+
+        if (
+            nr >= 0 &&
+            nr < size &&
+            nc >= 0 &&
+            nc < size
+        ) {
+
+            result.push({
+                row: nr,
+                col: nc,
+                direction
+            });
+        }
+    }
+
+    return result;
+}
+
+
+/* =========================================
+   ÇÖZÜM AĞINI OLUŞTUR
+   ========================================= */
+
+function createSolutionNetwork() {
+
+    const network = {};
 
     for (let row = 0; row < size; row++) {
 
         for (let col = 0; col < size; col++) {
 
-            connections[
-                cellKey(row, col)
+            network[
+                key(row, col)
             ] = [];
         }
     }
 
 
     /*
-       RANDOM DFS
-
-       Bütün kareleri birbirine bağlayan
-       bir ağaç oluşturuyoruz.
-
-       Böylece hiçbir kare kopuk kalmıyor.
+       Tüm kareleri birbirine bağlayan
+       garanti bir ağ oluşturuyoruz.
     */
 
     const visited = new Set();
@@ -160,14 +162,16 @@ function createSolvedNetwork() {
     ];
 
     visited.add(
-        cellKey(0, 0)
+        key(0, 0)
     );
 
 
     while (stack.length > 0) {
 
         const current =
-            stack[stack.length - 1];
+            stack[
+                stack.length - 1
+            ];
 
 
         const available =
@@ -176,15 +180,14 @@ function createSolvedNetwork() {
                     current.row,
                     current.col
                 )
-            ).filter(neighbor => {
+            ).filter(item => {
 
                 return !visited.has(
-                    cellKey(
-                        neighbor.row,
-                        neighbor.col
+                    key(
+                        item.row,
+                        item.col
                     )
                 );
-
             });
 
 
@@ -201,33 +204,31 @@ function createSolvedNetwork() {
 
 
         const currentKey =
-            cellKey(
+            key(
                 current.row,
                 current.col
             );
 
         const nextKey =
-            cellKey(
+            key(
                 next.row,
                 next.col
             );
 
 
-        /*
-           İki kareyi birbirine bağla.
-        */
-
-        connections[
+        network[
             currentKey
         ].push(
             next.direction
         );
 
 
-        connections[
+        network[
             nextKey
         ].push(
-            OPPOSITE[next.direction]
+            OPPOSITE[
+                next.direction
+            ]
         );
 
 
@@ -241,15 +242,15 @@ function createSolvedNetwork() {
     }
 
 
-    return connections;
+    return network;
 }
 
 
 /* =========================================
-   KAYNAK VE HEDEF İÇİN UÇLARI BUL
+   AĞIN UÇLARINI BUL
    ========================================= */
 
-function getLeaves(connections) {
+function getLeaves(network) {
 
     const leaves = [];
 
@@ -257,17 +258,15 @@ function getLeaves(connections) {
 
         for (let col = 0; col < size; col++) {
 
-            const list =
-                connections[
-                    cellKey(row, col)
+            const connections =
+                network[
+                    key(row, col)
                 ];
 
-            /*
-               Tek bağlantılı kareler
-               ağın uçlarıdır.
-            */
 
-            if (list.length === 1) {
+            if (
+                connections.length === 1
+            ) {
 
                 leaves.push({
                     row,
@@ -282,25 +281,20 @@ function getLeaves(connections) {
 
 
 /* =========================================
-   UZAKLIK HESAPLA
+   MESAFE
    ========================================= */
 
-function calculateDistances(
-    connections,
-    start
-) {
+function getDistances(network, start) {
 
     const distances = {};
 
     const queue = [
-        {
-            row: start.row,
-            col: start.col
-        }
+        start
     ];
 
+
     distances[
-        cellKey(
+        key(
             start.row,
             start.col
         )
@@ -312,8 +306,9 @@ function calculateDistances(
         const current =
             queue.shift();
 
+
         const currentKey =
-            cellKey(
+            key(
                 current.row,
                 current.col
             );
@@ -324,12 +319,13 @@ function calculateDistances(
 
 
         for (
-            const direction of
-            connections[currentKey]
+            const direction
+            of network[currentKey]
         ) {
 
             const [dr, dc] =
                 DELTA[direction];
+
 
             const nr =
                 current.row + dr;
@@ -337,8 +333,9 @@ function calculateDistances(
             const nc =
                 current.col + dc;
 
+
             const nextKey =
-                cellKey(nr, nc);
+                key(nr, nc);
 
 
             if (
@@ -348,6 +345,7 @@ function calculateDistances(
 
                 distances[nextKey] =
                     currentDistance + 1;
+
 
                 queue.push({
                     row: nr,
@@ -363,18 +361,18 @@ function calculateDistances(
 
 
 /* =========================================
-   UZAK HEDEF BUL
+   HEDEFİ SEÇ
    ========================================= */
 
-function findTarget(
-    connections,
+function chooseTarget(
+    network,
     source,
     leaves
 ) {
 
     const distances =
-        calculateDistances(
-            connections,
+        getDistances(
+            network,
             source
         );
 
@@ -395,7 +393,7 @@ function findTarget(
 
         const distance =
             distances[
-                cellKey(
+                key(
                     leaf.row,
                     leaf.col
                 )
@@ -419,163 +417,259 @@ function findTarget(
 
 
 /* =========================================
-   YENİ BULMACA ÜRET
+   YENİ BULMACA
    ========================================= */
 
 function generatePuzzle() {
 
-    size = getBoardSize();
-
-    let attempts = 0;
-
-
-    while (attempts < 100) {
-
-        attempts++;
+    size =
+        getBoardSize();
 
 
-        /*
-           Önce kesin bağlı ağ oluştur.
-        */
+    /*
+       Önce tamamen bağlı çözüm ağı.
+    */
 
-        const network =
-            createSolvedNetwork();
-
-
-        const leaves =
-            getLeaves(network);
+    const network =
+        createSolutionNetwork();
 
 
-        if (leaves.length < 2) {
-            continue;
+    const leaves =
+        getLeaves(network);
+
+
+    const source =
+        leaves[
+            Math.floor(
+                Math.random() *
+                leaves.length
+            )
+        ];
+
+
+    const target =
+        chooseTarget(
+            network,
+            source,
+            leaves
+        );
+
+
+    tiles = [];
+
+
+    for (let row = 0; row < size; row++) {
+
+        tiles[row] = [];
+
+
+        for (let col = 0; col < size; col++) {
+
+            let type = "path";
+
+
+            if (
+                row === source.row &&
+                col === source.col
+            ) {
+
+                type = "source";
+            }
+
+
+            if (
+                row === target.row &&
+                col === target.col
+            ) {
+
+                type = "target";
+            }
+
+
+            tiles[row][col] = {
+
+                type,
+
+                /*
+                   Doğru çözüm.
+                */
+
+                solution:
+                    [...network[
+                        key(row, col)
+                    ]],
+
+                /*
+                   Başlangıçta çözülmüş.
+                */
+
+                rotation: 0
+            };
         }
+    }
 
 
-        /*
-           Kaynak seç.
-        */
+    /*
+       Kontrollü karıştırma.
+    */
 
-        const source =
-            leaves[
-                Math.floor(
-                    Math.random() *
-                    leaves.length
-                )
+    scramblePuzzle(
+        source,
+        target
+    );
+}
+
+
+/* =========================================
+   ZORLUĞA GÖRE KARIŞTIR
+   ========================================= */
+
+function scramblePuzzle(
+    source,
+    target
+) {
+
+    const candidates = [];
+
+
+    for (let row = 0; row < size; row++) {
+
+        for (let col = 0; col < size; col++) {
+
+            /*
+               Kaynak ve hedefi sabit tut.
+            */
+
+            if (
+                row === source.row &&
+                col === source.col
+            ) {
+                continue;
+            }
+
+            if (
+                row === target.row &&
+                col === target.col
+            ) {
+                continue;
+            }
+
+
+            candidates.push({
+                row,
+                col
+            });
+        }
+    }
+
+
+    const shuffled =
+        shuffle(candidates);
+
+
+    /*
+       Seviyeye göre kaç parça
+       karıştırılacak.
+    */
+
+    let amount;
+
+    if (level <= 5) {
+
+        amount =
+            Math.min(
+                4 + level,
+                shuffled.length
+            );
+
+    }
+    else if (level <= 10) {
+
+        amount =
+            Math.min(
+                7 + level,
+                shuffled.length
+            );
+
+    }
+    else if (level <= 15) {
+
+        amount =
+            Math.min(
+                12 + level,
+                shuffled.length
+            );
+
+    }
+    else {
+
+        amount =
+            Math.min(
+                18 + level,
+                shuffled.length
+            );
+    }
+
+
+    for (
+        let i = 0;
+        i < amount;
+        i++
+    ) {
+
+        const position =
+            shuffled[i];
+
+
+        const tile =
+            tiles[
+                position.row
+            ][
+                position.col
             ];
 
 
         /*
-           Kaynaktan en uzak uç hedef.
+           1-3 kere döndür.
         */
 
-        const target =
-            findTarget(
-                network,
-                source,
-                leaves
+        tile.rotation =
+            1 +
+            Math.floor(
+                Math.random() * 3
             );
+    }
 
 
-        if (!target) {
-            continue;
-        }
+    /*
+       Bulmaca tesadüfen tamamen
+       çözülmüşse bir taşı değiştir.
+    */
+
+    if (isSolvedFromSource()) {
+
+        const position =
+            shuffled[0];
 
 
-        /*
-           Tahtayı oluştur.
-        */
-
-        tiles = [];
-
-        for (let row = 0; row < size; row++) {
-
-            tiles[row] = [];
-
-            for (let col = 0; col < size; col++) {
-
-                const connections =
-                    network[
-                        cellKey(row, col)
-                    ];
-
-
-                let type = "path";
-
-
-                if (
-                    row === source.row &&
-                    col === source.col
-                ) {
-                    type = "source";
-                }
-
-
-                if (
-                    row === target.row &&
-                    col === target.col
-                ) {
-                    type = "target";
-                }
-
-
-                tiles[row][col] = {
-
-                    type,
-
-                    /*
-                       Bu, bulmacanın doğru
-                       çözümündeki bağlantılar.
-                    */
-
-                    solution:
-                        [...connections],
-
-                    /*
-                       Başlangıçta rastgele
-                       döndürülmüş olacak.
-                    */
-
-                    rotation:
-                        Math.floor(
-                            Math.random() * 4
-                        )
-                };
-            }
-        }
-
-
-        /*
-           Başlangıçta çözülmüşse
-           bir parçayı daha döndür.
-        */
-
-        if (isCurrentPuzzleSolved()) {
-
-            const row =
-                Math.floor(
-                    Math.random() * size
-                );
-
-            const col =
-                Math.floor(
-                    Math.random() * size
-                );
-
-            tiles[row][col].rotation =
-                (
-                    tiles[row][col].rotation +
-                    1
-                ) % 4;
-        }
-
-
-        return;
+        tiles[
+            position.row
+        ][
+            position.col
+        ].rotation =
+            (
+                tiles[
+                    position.row
+                ][
+                    position.col
+                ].rotation + 1
+            ) % 4;
     }
 }
 
 
 /* =========================================
-   PARÇANIN GERÇEK YÖNLERİ
+   GERÇEK BAĞLANTILAR
    ========================================= */
 
 function getConnections(tile) {
@@ -612,7 +706,7 @@ function getConnections(tile) {
 
 
 /* =========================================
-   TAHTAYI ÇİZ
+   TAHTAYI OLUŞTUR
    ========================================= */
 
 function renderBoard() {
@@ -638,15 +732,19 @@ function renderBoard() {
             const tile =
                 document.createElement("button");
 
+
             tile.type = "button";
 
             tile.className = "tile";
+
 
             tile.dataset.row = row;
             tile.dataset.col = col;
 
 
-            if (data.type === "source") {
+            if (
+                data.type === "source"
+            ) {
 
                 tile.classList.add(
                     "source"
@@ -654,7 +752,9 @@ function renderBoard() {
             }
 
 
-            if (data.type === "target") {
+            if (
+                data.type === "target"
+            ) {
 
                 tile.classList.add(
                     "target"
@@ -665,13 +765,13 @@ function renderBoard() {
             const inner =
                 document.createElement("div");
 
+
             inner.className =
                 "tile-inner";
 
 
             /*
-               Tıklayınca görsel olarak
-               90° dönecek.
+               Görsel olarak döndür.
             */
 
             inner.style.transform =
@@ -679,8 +779,7 @@ function renderBoard() {
 
 
             /*
-               Temel çözüm bağlantılarını çiz.
-               Dönüşü inner yapıyor.
+               Çözüm bağlantılarını çiz.
             */
 
             for (
@@ -691,11 +790,13 @@ function renderBoard() {
                 const connection =
                     document.createElement("div");
 
+
                 connection.className =
                     "connection";
 
 
                 let angle = 0;
+
 
                 if (direction === "N")
                     angle = 0;
@@ -724,7 +825,7 @@ function renderBoard() {
 
 
             /*
-               HER BASIŞTA 90°
+               DOKUNMA
             */
 
             tile.addEventListener(
@@ -736,10 +837,13 @@ function renderBoard() {
                     }
 
 
+                    /*
+                       90 derece.
+                    */
+
                     data.rotation =
                         (
-                            data.rotation +
-                            1
+                            data.rotation + 1
                         ) % 4;
 
 
@@ -762,13 +866,13 @@ function renderBoard() {
 
 
 /* =========================================
-   IŞIK AĞINI HESAPLA
+   BAĞLANTI HESAPLA
    ========================================= */
 
 function checkNetwork() {
 
     /*
-       Önce bütün ışıkları temizle.
+       Önce temizle.
     */
 
     document
@@ -789,6 +893,10 @@ function checkNetwork() {
         findSource();
 
 
+    const target =
+        findTarget();
+
+
     const visited =
         new Set();
 
@@ -805,7 +913,7 @@ function checkNetwork() {
 
 
         const currentKey =
-            cellKey(
+            key(
                 current.row,
                 current.col
             );
@@ -855,12 +963,12 @@ function checkNetwork() {
 
 
         /*
-           HEDEF
+           Hedefe ulaştık mı?
         */
 
         if (
-            currentTile.type ===
-            "target"
+            current.row === target.row &&
+            current.col === target.col
         ) {
 
             if (element) {
@@ -873,7 +981,7 @@ function checkNetwork() {
 
 
         /*
-           Komşuları kontrol et.
+           Komşular.
         */
 
         for (
@@ -898,6 +1006,7 @@ function checkNetwork() {
                 nextCol < 0 ||
                 nextCol >= size
             ) {
+
                 continue;
             }
 
@@ -917,13 +1026,14 @@ function checkNetwork() {
 
 
             /*
-               İki taraf da birbirine
-               bakıyorsa bağlantı var.
+               KARŞILIKLI BAĞLANTI
             */
 
             if (
                 nextConnections.includes(
-                    OPPOSITE[direction]
+                    OPPOSITE[
+                        direction
+                    ]
                 )
             ) {
 
@@ -936,10 +1046,6 @@ function checkNetwork() {
     }
 
 
-    /*
-       Bağlantı yüzdesi
-    */
-
     const total =
         size * size;
 
@@ -950,7 +1056,9 @@ function checkNetwork() {
 
     const percent =
         Math.round(
-            (connected / total) * 100
+            connected /
+            total *
+            100
         );
 
 
@@ -958,7 +1066,19 @@ function checkNetwork() {
         `${percent}%`;
 
 
-    if (percent === 100) {
+    /*
+       Tüm ağ bağlandı.
+    */
+
+    if (
+        percent === 100 &&
+        visited.has(
+            key(
+                target.row,
+                target.col
+            )
+        )
+    ) {
 
         levelComplete();
 
@@ -974,6 +1094,7 @@ function checkNetwork() {
     message.textContent =
         `${connected} / ${total} kare bağlı`;
 
+
     message.classList.remove(
         "success"
     );
@@ -981,7 +1102,7 @@ function checkNetwork() {
 
 
 /* =========================================
-   KAYNAĞI BUL
+   KAYNAK
    ========================================= */
 
 function findSource() {
@@ -1012,126 +1133,10 @@ function findSource() {
 
 
 /* =========================================
-   HEDEFİN BAĞLANIP BAĞLANMADIĞINI BUL
+   HEDEF
    ========================================= */
 
-function isTargetConnected() {
-
-    const source =
-        findSource();
-
-
-    const target =
-        findTargetPosition();
-
-
-    const visited =
-        new Set();
-
-
-    const queue = [
-        source
-    ];
-
-
-    while (queue.length > 0) {
-
-        const current =
-            queue.shift();
-
-
-        const currentKey =
-            cellKey(
-                current.row,
-                current.col
-            );
-
-
-        if (
-            visited.has(currentKey)
-        ) {
-            continue;
-        }
-
-
-        visited.add(currentKey);
-
-
-        if (
-            current.row === target.row &&
-            current.col === target.col
-        ) {
-
-            return true;
-        }
-
-
-        const currentConnections =
-            getConnections(
-                tiles[
-                    current.row
-                ][
-                    current.col
-                ]
-            );
-
-
-        for (
-            const direction
-            of currentConnections
-        ) {
-
-            const [dr, dc] =
-                DELTA[direction];
-
-
-            const nr =
-                current.row + dr;
-
-            const nc =
-                current.col + dc;
-
-
-            if (
-                nr < 0 ||
-                nr >= size ||
-                nc < 0 ||
-                nc >= size
-            ) {
-                continue;
-            }
-
-
-            const nextConnections =
-                getConnections(
-                    tiles[nr][nc]
-                );
-
-
-            if (
-                nextConnections.includes(
-                    OPPOSITE[direction]
-                )
-            ) {
-
-                queue.push({
-                    row: nr,
-                    col: nc
-                });
-            }
-        }
-    }
-
-
-    return false;
-}
-
-
-/* =========================================
-   HEDEF KONUMU
-   ========================================= */
-
-function findTargetPosition() {
+function findTarget() {
 
     for (let row = 0; row < size; row++) {
 
@@ -1159,10 +1164,13 @@ function findTargetPosition() {
 
 
 /* =========================================
-   ELEMENT BUL
+   KARO ELEMENTİ
    ========================================= */
 
-function getTileElement(row, col) {
+function getTileElement(
+    row,
+    col
+) {
 
     return document.querySelector(
         `.tile[data-row="${row}"][data-col="${col}"]`
@@ -1171,17 +1179,17 @@ function getTileElement(row, col) {
 
 
 /* =========================================
-   BAŞLANGIÇTA ÇÖZÜLÜ MÜ?
+   BAŞLANGIÇTA ÇÖZÜLMÜŞ MÜ?
    ========================================= */
 
-function isCurrentPuzzleSolved() {
+function isSolvedFromSource() {
 
     const source =
         findSource();
 
 
     const target =
-        findTargetPosition();
+        findTarget();
 
 
     const visited =
@@ -1200,7 +1208,7 @@ function isCurrentPuzzleSolved() {
 
 
         const currentKey =
-            cellKey(
+            key(
                 current.row,
                 current.col
             );
@@ -1257,21 +1265,22 @@ function isCurrentPuzzleSolved() {
                 nc < 0 ||
                 nc >= size
             ) {
+
                 continue;
             }
 
 
-            const next =
-                tiles[nr][nc];
-
-
             const nextConnections =
-                getConnections(next);
+                getConnections(
+                    tiles[nr][nc]
+                );
 
 
             if (
                 nextConnections.includes(
-                    OPPOSITE[direction]
+                    OPPOSITE[
+                        direction
+                    ]
                 )
             ) {
 
@@ -1299,20 +1308,12 @@ function levelComplete() {
     }
 
 
-    /*
-       Hedef gerçekten bağlı mı?
-    */
-
-    if (!isTargetConnected()) {
-        return;
-    }
-
-
     solved = true;
 
 
     lightStatus.textContent =
         "100%";
+
 
     lightStatus.classList.add(
         "on"
@@ -1320,7 +1321,8 @@ function levelComplete() {
 
 
     message.textContent =
-        `🎉 Seviye ${level} tamamlandı!`;
+        `🎉 SEVİYE ${level} TAMAMLANDI!`;
+
 
     message.classList.add(
         "success"
@@ -1330,6 +1332,7 @@ function levelComplete() {
     completedLevel.textContent =
         level;
 
+
     totalMoves.textContent =
         moves;
 
@@ -1338,8 +1341,7 @@ function levelComplete() {
 
 
     /*
-       Biraz bekle,
-       sonraki seviyeye geç.
+       Sonraki bölüm.
     */
 
     setTimeout(() => {
@@ -1348,7 +1350,7 @@ function levelComplete() {
 
         startLevel();
 
-    }, 1400);
+    }, 1600);
 }
 
 
@@ -1358,20 +1360,31 @@ function levelComplete() {
 
 function calculateStars() {
 
+    /*
+       Daha az hamle = daha fazla yıldız.
+    */
+
     const optimal =
-        size * size;
+        Math.max(
+            4,
+            Math.floor(
+                size * size * 0.7
+            )
+        );
 
 
     let result = 1;
 
 
-    if (moves <= optimal * 1.3) {
+    if (
+        moves <= optimal
+    ) {
 
         result = 3;
 
     }
     else if (
-        moves <= optimal * 2
+        moves <= optimal * 1.7
     ) {
 
         result = 2;
@@ -1392,11 +1405,14 @@ function updateUI() {
     levelNumber.textContent =
         level;
 
+
     moveCount.textContent =
         moves;
 
+
     totalMoves.textContent =
         moves;
+
 
     completedLevel.textContent =
         level;
@@ -1415,9 +1431,6 @@ function updateUI() {
    ========================================= */
 
 function startLevel() {
-
-    size =
-        getBoardSize();
 
     moves = 0;
 
@@ -1448,13 +1461,12 @@ resetButton.addEventListener(
     () => {
 
         startLevel();
-
     }
 );
 
 
 /* =========================================
-   OYUNU BAŞLAT
+   BAŞLAT
    ========================================= */
 
 startLevel();
