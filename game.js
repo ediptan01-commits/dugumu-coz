@@ -91,6 +91,13 @@ shopItems.forEach((item) => {
             "true"
         );
 
+        localStorage.setItem(
+    "activeTheme",
+    itemId
+);
+
+applyTheme();
+
         item.querySelector("span").textContent =
             "✓ SAHİPSİN";
 
