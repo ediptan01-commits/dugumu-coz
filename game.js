@@ -1,299 +1,160 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const moveCount = document.getElementById("moveCount");
-const crossingCount = document.getElementById("crossingCount");
-const levelNumber = document.getElementById("levelNumber");
+const moveCountEl = document.getElementById("moveCount");
+const crossingCountEl = document.getElementById("crossingCount");
+const levelNumberEl = document.getElementById("levelNumber");
 const resetButton = document.getElementById("resetButton");
 
 let ropes = [];
-let selectedNode = null;
+let selected = null;
 let moves = 0;
-let gameCompleted = false;
+let gameFinished = false;
 
-
-/* =========================
-   OYUN AYARLARI
-========================= */
-
-const ropeColors = [
-    "#ff5c5c",
-    "#5c9dff",
-    "#ffc857",
-    "#62d394"
-];
-
-const NODE_RADIUS = 16;
-
-
-/* =========================
-   CANVAS BOYUTU
-========================= */
+const NODE_RADIUS = 18;
 
 function resizeCanvas() {
-
     const rect = canvas.getBoundingClientRect();
+
+    const width = Math.max(300, Math.floor(rect.width));
+    const height = Math.max(300, Math.floor(rect.height));
 
     const dpr = window.devicePixelRatio || 1;
 
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
 
-    ctx.setTransform(
-        dpr,
-        0,
-        0,
-        dpr,
-        0,
-        0
-    );
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    drawGame();
+    draw();
 }
-
-
-/* =========================
-   BÖLÜM OLUŞTUR
-========================= */
 
 function createLevel() {
 
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
-
-    /*
-       Her ip iki düğümden oluşuyor.
-       Başlangıçta ipler birbirinin üzerinden
-       geçiyor.
-    */
+    const width = Math.max(300, canvas.clientWidth);
+    const height = Math.max(300, canvas.clientHeight);
 
     ropes = [
-
         {
-            id: 0,
-            color: ropeColors[0],
+            color: "#ff5b5b",
             start: {
-                x: width * 0.20,
+                x: width * 0.18,
                 y: height * 0.20
             },
             end: {
-                x: width * 0.80,
+                x: width * 0.82,
                 y: height * 0.80
             }
         },
 
         {
-            id: 1,
-            color: ropeColors[1],
+            color: "#4d9cff",
             start: {
-                x: width * 0.80,
+                x: width * 0.82,
                 y: height * 0.20
             },
             end: {
-                x: width * 0.20,
+                x: width * 0.18,
                 y: height * 0.80
             }
         }
     ];
 
     moves = 0;
-    gameCompleted = false;
+    gameFinished = false;
 
     updateUI();
-
-    drawGame();
+    draw();
 }
 
-
-/* =========================
-   İPLERİ ÇİZ
-========================= */
-
-function drawGame() {
+function draw() {
 
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
 
-    ctx.clearRect(
-        0,
-        0,
-        width,
-        height
-    );
+    ctx.clearRect(0, 0, width, height);
 
-    /*
-       Hafif arka plan noktaları
-    */
+    drawBackground(width, height);
 
-    drawGrid(
-        width,
-        height
-    );
-
-    /*
-       Önce ipleri çiziyoruz.
-    */
-
-    ropes.forEach(rope => {
-
+    for (const rope of ropes) {
         drawRope(
             rope.start,
             rope.end,
             rope.color
         );
+    }
 
-    });
-
-    /*
-       Daha sonra düğümleri çiziyoruz.
-    */
-
-    ropes.forEach(rope => {
-
-        drawNode(
-            rope.start,
-            rope.color
-        );
-
-        drawNode(
-            rope.end,
-            rope.color
-        );
-
-    });
+    for (const rope of ropes) {
+        drawNode(rope.start, rope.color);
+        drawNode(rope.end, rope.color);
+    }
 }
 
+function drawBackground(width, height) {
 
-/* =========================
-   IZGARA
-========================= */
+    ctx.fillStyle = "#11182c";
+    ctx.fillRect(0, 0, width, height);
 
-function drawGrid(width, height) {
-
-    ctx.save();
-
-    ctx.globalAlpha = 0.08;
-
-    ctx.strokeStyle = "#ffffff";
-
+    ctx.strokeStyle = "rgba(255,255,255,0.05)";
     ctx.lineWidth = 1;
 
-    const spacing = 35;
+    const gap = 35;
 
-    for (
-        let x = 0;
-        x < width;
-        x += spacing
-    ) {
-
+    for (let x = 0; x < width; x += gap) {
         ctx.beginPath();
-
         ctx.moveTo(x, 0);
-
         ctx.lineTo(x, height);
-
         ctx.stroke();
     }
 
-    for (
-        let y = 0;
-        y < height;
-        y += spacing
-    ) {
-
+    for (let y = 0; y < height; y += gap) {
         ctx.beginPath();
-
         ctx.moveTo(0, y);
-
         ctx.lineTo(width, y);
-
         ctx.stroke();
     }
-
-    ctx.restore();
 }
-
-
-/* =========================
-   İP ÇİZİMİ
-========================= */
 
 function drawRope(start, end, color) {
 
-    ctx.save();
-
+    // Gölge
     ctx.beginPath();
-
-    ctx.moveTo(
-        start.x,
-        start.y
-    );
-
-    ctx.lineTo(
-        end.x,
-        end.y
-    );
-
-    /*
-       İpin gölgesi
-    */
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
 
     ctx.lineWidth = 14;
-
-    ctx.strokeStyle =
-        "rgba(0,0,0,0.25)";
-
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
     ctx.stroke();
 
-    /*
-       İpin kendisi
-    */
+    // İp
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
 
     ctx.lineWidth = 8;
-
-    ctx.strokeStyle = color;
-
     ctx.lineCap = "round";
-
+    ctx.strokeStyle = color;
     ctx.stroke();
-
-    ctx.restore();
 }
-
-
-/* =========================
-   DÜĞÜM ÇİZİMİ
-========================= */
 
 function drawNode(point, color) {
 
-    ctx.save();
-
-    /*
-       Dış halka
-    */
-
+    // Dış halka
     ctx.beginPath();
-
     ctx.arc(
         point.x,
         point.y,
-        NODE_RADIUS + 5,
+        NODE_RADIUS + 7,
         0,
         Math.PI * 2
     );
 
-    ctx.fillStyle =
-        "rgba(255,255,255,0.12)";
-
+    ctx.fillStyle = "rgba(255,255,255,0.12)";
     ctx.fill();
 
-    /*
-       Düğüm
-    */
-
+    // Düğüm
     ctx.beginPath();
-
     ctx.arc(
         point.x,
         point.y,
@@ -303,44 +164,23 @@ function drawNode(point, color) {
     );
 
     ctx.fillStyle = "#ffffff";
-
     ctx.fill();
 
     ctx.lineWidth = 4;
-
     ctx.strokeStyle = color;
-
     ctx.stroke();
-
-    ctx.restore();
 }
 
-
-/* =========================
-   PARMAK POZİSYONU
-========================= */
-
-function getPointerPosition(event) {
+function getPosition(event) {
 
     const rect =
         canvas.getBoundingClientRect();
 
     return {
-
-        x:
-            event.clientX -
-            rect.left,
-
-        y:
-            event.clientY -
-            rect.top
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
     };
 }
-
-
-/* =========================
-   DÜĞÜM BUL
-========================= */
 
 function findNode(position) {
 
@@ -348,34 +188,25 @@ function findNode(position) {
 
         const nodes = [
             {
-                rope,
-                type: "start",
-                point: rope.start
+                rope: rope,
+                point: rope.start,
+                type: "start"
             },
-
             {
-                rope,
-                type: "end",
-                point: rope.end
+                rope: rope,
+                point: rope.end,
+                type: "end"
             }
         ];
 
         for (const node of nodes) {
 
-            const distance =
-                Math.hypot(
-                    node.point.x -
-                        position.x,
+            const distance = Math.hypot(
+                node.point.x - position.x,
+                node.point.y - position.y
+            );
 
-                    node.point.y -
-                        position.y
-                );
-
-            if (
-                distance <=
-                NODE_RADIUS + 15
-            ) {
-
+            if (distance < NODE_RADIUS + 20) {
                 return node;
             }
         }
@@ -384,192 +215,113 @@ function findNode(position) {
     return null;
 }
 
+canvas.addEventListener("pointerdown", function(event) {
 
-/* =========================
-   PARMAK BASILDI
-========================= */
-
-canvas.addEventListener(
-    "pointerdown",
-    event => {
-
-        if (gameCompleted) {
-            return;
-        }
-
-        const position =
-            getPointerPosition(event);
-
-        selectedNode =
-            findNode(position);
-
-        if (selectedNode) {
-
-            canvas.setPointerCapture(
-                event.pointerId
-            );
-        }
+    if (gameFinished) {
+        return;
     }
-);
 
+    const position = getPosition(event);
 
-/* =========================
-   SÜRÜKLEME
-========================= */
+    selected = findNode(position);
 
-canvas.addEventListener(
-    "pointermove",
-    event => {
-
-        if (!selectedNode) {
-            return;
-        }
-
-        const position =
-            getPointerPosition(event);
-
-        /*
-           Düğümü oyun alanında tut.
-        */
-
-        const margin = 25;
-
-        position.x =
-            Math.max(
-                margin,
-                Math.min(
-                    canvas.clientWidth -
-                        margin,
-                    position.x
-                )
-            );
-
-        position.y =
-            Math.max(
-                margin,
-                Math.min(
-                    canvas.clientHeight -
-                        margin,
-                    position.y
-                )
-            );
-
-        selectedNode.point.x =
-            position.x;
-
-        selectedNode.point.y =
-            position.y;
-
-        drawGame();
-
-        updateCrossings();
+    if (selected) {
+        canvas.setPointerCapture(event.pointerId);
     }
-);
+});
 
+canvas.addEventListener("pointermove", function(event) {
 
-/* =========================
-   PARMAK BIRAKILDI
-========================= */
-
-canvas.addEventListener(
-    "pointerup",
-    event => {
-
-        if (!selectedNode) {
-            return;
-        }
-
-        moves++;
-
-        selectedNode = null;
-
-        updateUI();
-
-        checkLevelComplete();
-
-        canvas.releasePointerCapture(
-            event.pointerId
-        );
+    if (!selected) {
+        return;
     }
-);
 
+    const position = getPosition(event);
 
-/* =========================
-   KESİŞME KONTROLÜ
-========================= */
+    const margin = 25;
+
+    selected.point.x = Math.max(
+        margin,
+        Math.min(
+            canvas.clientWidth - margin,
+            position.x
+        )
+    );
+
+    selected.point.y = Math.max(
+        margin,
+        Math.min(
+            canvas.clientHeight - margin,
+            position.y
+        )
+    );
+
+    draw();
+
+    updateCrossings();
+});
+
+canvas.addEventListener("pointerup", function(event) {
+
+    if (!selected) {
+        return;
+    }
+
+    moves++;
+
+    selected = null;
+
+    updateUI();
+
+    checkComplete();
+
+    try {
+        canvas.releasePointerCapture(event.pointerId);
+    } catch (error) {
+        // Dokunma zaten bırakılmışsa sorun yok.
+    }
+});
 
 function updateCrossings() {
 
     let crossings = 0;
 
-    for (
-        let i = 0;
-        i < ropes.length;
-        i++
-    ) {
+    for (let i = 0; i < ropes.length; i++) {
 
-        for (
-            let j = i + 1;
-            j < ropes.length;
-            j++
-        ) {
+        for (let j = i + 1; j < ropes.length; j++) {
 
             if (
-                linesIntersect(
+                intersects(
                     ropes[i].start,
                     ropes[i].end,
                     ropes[j].start,
                     ropes[j].end
                 )
             ) {
-
                 crossings++;
             }
         }
     }
 
-    crossingCount.textContent =
-        crossings;
+    crossingCountEl.textContent = crossings;
 
     return crossings;
 }
 
+function intersects(a, b, c, d) {
 
-/* =========================
-   ÇİZGİ KESİŞMESİ
-========================= */
+    function orientation(p, q, r) {
 
-function linesIntersect(
-    a,
-    b,
-    c,
-    d
-) {
+        return (
+            (q.x - p.x) * (r.y - p.y) -
+            (q.y - p.y) * (r.x - p.x)
+        );
+    }
 
-    const orientation =
-        (p, q, r) => {
-
-            return (
-                (q.x - p.x) *
-                    (r.y - p.y)
-
-                -
-                (q.y - p.y) *
-                    (r.x - p.x)
-            );
-        };
-
-    const o1 =
-        orientation(a, b, c);
-
-    const o2 =
-        orientation(a, b, d);
-
-    const o3 =
-        orientation(c, d, a);
-
-    const o4 =
-        orientation(c, d, b);
+    const o1 = orientation(a, b, c);
+    const o2 = orientation(a, b, d);
+    const o3 = orientation(c, d, a);
+    const o4 = orientation(c, d, b);
 
     return (
         o1 * o2 < 0 &&
@@ -577,77 +329,47 @@ function linesIntersect(
     );
 }
 
+function checkComplete() {
 
-/* =========================
-   BÖLÜM TAMAMLANDI MI?
-========================= */
+    const crossings = updateCrossings();
 
-function checkLevelComplete() {
+    if (crossings === 0 && !gameFinished) {
 
-    const crossings =
-        updateCrossings();
+        gameFinished = true;
 
-    if (
-        crossings === 0 &&
-        !gameCompleted
-    ) {
-
-        gameCompleted = true;
-
-        setTimeout(() => {
+        setTimeout(function() {
 
             alert(
-                "🎉 Düğüm çözüldü!"
+                "🎉 DÜĞÜM ÇÖZÜLDÜ!\n\n" +
+                "Hamle: " + moves
             );
 
-        }, 100);
+        }, 150);
     }
 }
-
-
-/* =========================
-   ARAYÜZ
-========================= */
 
 function updateUI() {
 
-    moveCount.textContent =
-        moves;
+    moveCountEl.textContent = moves;
+    levelNumberEl.textContent = "1";
 
     updateCrossings();
-
-    levelNumber.textContent =
-        "1";
 }
-
-
-/* =========================
-   YENİDEN BAŞLAT
-========================= */
 
 resetButton.addEventListener(
     "click",
-    () => {
-
+    function() {
         createLevel();
-
     }
 );
-
-
-/* =========================
-   BAŞLAT
-========================= */
 
 window.addEventListener(
     "resize",
-    () => {
-
+    function() {
         resizeCanvas();
-
     }
 );
 
+// Oyunu başlat
 resizeCanvas();
-
 createLevel();
