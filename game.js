@@ -1605,50 +1605,18 @@ const shopButton = document.getElementById("shopButton");
 const shopModal = document.getElementById("shopModal");
 const closeShop = document.getElementById("closeShop");
 
-const shopGold = document.getElementById("shopGold");
-const menuGold = document.getElementById("menuGold");
+if (shopButton && shopModal) {
 
-function updateShopGold() {
-
-    if (shopGold) {
-        shopGold.textContent = gold;
-    }
-
-    if (menuGold) {
-        menuGold.textContent = gold;
-    }
-}
-
-if (shopButton) {
-
-    shopButton.addEventListener("click", () => {
-
-        updateShopGold();
-
-        shopModal.hidden = false;
-
-    });
+    shopButton.onclick = function () {
+        shopModal.removeAttribute("hidden");
+    };
 
 }
 
-if (closeShop) {
+if (closeShop && shopModal) {
 
-    closeShop.addEventListener("click", () => {
-
-        shopModal.hidden = true;
-
-    });
-
-}
-
-if (shopModal) {
-
-    shopModal.addEventListener("click", (event) => {
-
-        if (event.target === shopModal) {
-            shopModal.hidden = true;
-        }
-
-    });
+    closeShop.onclick = function () {
+        shopModal.setAttribute("hidden", "");
+    };
 
 }
