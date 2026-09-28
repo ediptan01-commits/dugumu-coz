@@ -1158,9 +1158,9 @@ if (
             target.row,
             target.col
         )
-    )
+    ) &&
+    connected === total
 ) {
-
     levelComplete();
 
     return;
