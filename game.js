@@ -8,22 +8,13 @@ const stars = document.getElementById("stars");
 const message = document.getElementById("message");
 const resetButton = document.getElementById("resetButton");
 
-const SIZE = 4;
+const DIRS = ["N", "E", "S", "W"];
 
-let tiles = [];
-let moves = 0;
-let solved = false;
-
-
-/* =========================================
-   YÖNLER
-   ========================================= */
-
-const DIR = {
-    N: { row: -1, col: 0 },
-    E: { row: 0, col: 1 },
-    S: { row: 1, col: 0 },
-    W: { row: 0, col: -1 }
+const DELTA = {
+    N: [-1, 0],
+    E: [0, 1],
+    S: [1, 0],
+    W: [0, -1]
 };
 
 const OPPOSITE = {
@@ -33,125 +24,469 @@ const OPPOSITE = {
     W: "E"
 };
 
-
-/* =========================================
-   BÖLÜM
-   ÇÖZÜLMÜŞ HALİ
-   =========================================
-
-   💡 ─ ─ ┐
-          │
-          │
-          │
-          🎯
-*/
-
-const level1 = [
-    [
-        { type: "source",   solution: 0, rotation: 1 },
-        { type: "straight", solution: 0, rotation: 1 },
-        { type: "straight", solution: 0, rotation: 1 },
-        { type: "corner",   solution: 1, rotation: 2 }
-    ],
-
-    [
-        { type: "corner",   solution: 0, rotation: 1 },
-        { type: "straight", solution: 1, rotation: 0 },
-        { type: "corner",   solution: 0, rotation: 2 },
-        { type: "straight", solution: 1, rotation: 0 }
-    ],
-
-    [
-        { type: "straight", solution: 0, rotation: 1 },
-        { type: "corner",   solution: 1, rotation: 0 },
-        { type: "straight", solution: 0, rotation: 1 },
-        { type: "straight", solution: 1, rotation: 2 }
-    ],
-
-    [
-        { type: "corner",   solution: 2, rotation: 0 },
-        { type: "straight", solution: 1, rotation: 1 },
-        { type: "corner",   solution: 0, rotation: 3 },
-        { type: "target",   solution: 0, rotation: 1 }
-    ]
-];
+let size = 4;
+let level = 1;
+let moves = 0;
+let solved = false;
+let tiles = [];
 
 
-/* =========================================
-   PARÇA BAĞLANTILARI
-   ========================================= */
+// ========================================
+// TAHTA BOYUTU
+// ========================================
 
-function getConnections(type, rotation) {
+function getBoardSize() {
 
-    let base = [];
+    if (level <= 5) return 4;
 
-    if (type === "straight") {
-        base = ["E", "W"];
+    if (level <= 10) return 5;
+
+    if (level <= 15) return 6;
+
+    return 7;
+}
+
+
+// ========================================
+// YARDIMCI
+// ========================================
+
+function key(row, col) {
+    return `${row}-${col}`;
+}
+
+
+function randomItem(array) {
+    return array[
+        Math.floor(Math.random() * array.length)
+    ];
+}
+
+
+function shuffle(array) {
+
+    const copy = [...array];
+
+    for (let i = copy.length - 1; i > 0; i--) {
+
+        const j =
+            Math.floor(Math.random() * (i + 1));
+
+        [copy[i], copy[j]] =
+            [copy[j], copy[i]];
     }
 
-    if (type === "corner") {
-        base = ["N", "E"];
-    }
+    return copy;
+}
 
-    if (type === "source") {
-        base = ["E"];
-    }
 
-    if (type === "target") {
-        base = ["W"];
-    }
+// ========================================
+// KOMŞULAR
+// ========================================
 
-    let result = [...base];
+function getNeighbors(row, col) {
 
-    for (let i = 0; i < rotation; i++) {
+    const result = [];
 
-        result = result.map(direction => {
+    for (const direction of DIRS) {
 
-            if (direction === "N") return "E";
-            if (direction === "E") return "S";
-            if (direction === "S") return "W";
-            if (direction === "W") return "N";
+        const [dr, dc] =
+            DELTA[direction];
 
-            return direction;
-        });
+        const nr = row + dr;
+        const nc = col + dc;
+
+        if (
+            nr >= 0 &&
+            nr < size &&
+            nc >= 0 &&
+            nc < size
+        ) {
+            result.push({
+                row: nr,
+                col: nc,
+                direction
+            });
+        }
     }
 
     return result;
 }
 
 
-/* =========================================
-   OYUNU BAŞLAT
-   ========================================= */
+// ========================================
+// OTOMATİK BULMACA ÜRET
+// ========================================
 
-function startGame() {
+function generatePuzzle() {
 
-    moves = 0;
-    solved = false;
+    const connections = {};
 
-    tiles = JSON.parse(
-        JSON.stringify(level1)
-    );
+    for (let r = 0; r < size; r++) {
 
-    renderBoard();
-    updateUI();
-    checkLight();
+        for (let c = 0; c < size; c++) {
+
+            connections[key(r, c)] = [];
+        }
+    }
+
+
+    /*
+       RANDOM SPANNING TREE
+
+       Bütün kareleri birbirine bağlayan
+       garanti çözülebilir bir ağ oluşturur.
+    */
+
+    const visited = new Set();
+
+    const stack = [
+        {
+            row: 0,
+            col: 0
+        }
+    ];
+
+    visited.add(key(0, 0));
+
+
+    while (stack.length > 0) {
+
+        const current =
+            stack[stack.length - 1];
+
+        const neighbors =
+            shuffle(
+                getNeighbors(
+                    current.row,
+                    current.col
+                )
+            ).filter(n =>
+                !visited.has(
+                    key(n.row, n.col)
+                )
+            );
+
+
+        if (neighbors.length === 0) {
+
+            stack.pop();
+
+            continue;
+        }
+
+
+        const next = neighbors[0];
+
+        const currentKey =
+            key(
+                current.row,
+                current.col
+            );
+
+        const nextKey =
+            key(
+                next.row,
+                next.col
+            );
+
+
+        connections[
+            currentKey
+        ].push(next.direction);
+
+
+        connections[
+            nextKey
+        ].push(
+            OPPOSITE[next.direction]
+        );
+
+
+        visited.add(nextKey);
+
+        stack.push({
+            row: next.row,
+            col: next.col
+        });
+    }
+
+
+    /*
+       AĞIN UÇLARINI BUL
+    */
+
+    const leaves = [];
+
+    for (let r = 0; r < size; r++) {
+
+        for (let c = 0; c < size; c++) {
+
+            if (
+                connections[
+                    key(r, c)
+                ].length === 1
+            ) {
+                leaves.push({
+                    row: r,
+                    col: c
+                });
+            }
+        }
+    }
+
+
+    /*
+       Kaynak ve hedef farklı uçlar.
+    */
+
+    const source =
+        randomItem(leaves);
+
+
+    /*
+       Hedeften uzak bir uç seç.
+    */
+
+    const distances =
+        calculateDistances(
+            connections,
+            source
+        );
+
+
+    let target = null;
+    let maxDistance = -1;
+
+    for (const leaf of leaves) {
+
+        if (
+            leaf.row === source.row &&
+            leaf.col === source.col
+        ) {
+            continue;
+        }
+
+        const distance =
+            distances[
+                key(
+                    leaf.row,
+                    leaf.col
+                )
+            ] || 0;
+
+        if (distance > maxDistance) {
+
+            maxDistance = distance;
+
+            target = leaf;
+        }
+    }
+
+
+    /*
+       Tüm parçaları oluştur.
+    */
+
+    tiles = [];
+
+    for (let r = 0; r < size; r++) {
+
+        tiles[r] = [];
+
+        for (let c = 0; c < size; c++) {
+
+            const con =
+                connections[
+                    key(r, c)
+                ];
+
+            let type = "path";
+
+            if (
+                r === source.row &&
+                c === source.col
+            ) {
+                type = "source";
+            }
+            else if (
+                r === target.row &&
+                c === target.col
+            ) {
+                type = "target";
+            }
+
+
+            tiles[r][c] = {
+
+                type,
+
+                baseConnections: [...con],
+
+                rotation:
+                    Math.floor(
+                        Math.random() * 4
+                    )
+            };
+        }
+    }
+
+
+    /*
+       Çözülmüş kalma ihtimalini engelle.
+    */
+
+    if (isSolved()) {
+
+        const r =
+            Math.floor(
+                Math.random() * size
+            );
+
+        const c =
+            Math.floor(
+                Math.random() * size
+            );
+
+        tiles[r][c].rotation =
+            (tiles[r][c].rotation + 1) % 4;
+    }
 }
 
 
-/* =========================================
-   TAHTAYI OLUŞTUR
-   ========================================= */
+// ========================================
+// AĞ MESAFESİ
+// ========================================
+
+function calculateDistances(
+    connections,
+    start
+) {
+
+    const distances = {};
+
+    const queue = [
+        {
+            row: start.row,
+            col: start.col
+        }
+    ];
+
+    distances[
+        key(start.row, start.col)
+    ] = 0;
+
+
+    while (queue.length > 0) {
+
+        const current =
+            queue.shift();
+
+        const currentKey =
+            key(
+                current.row,
+                current.col
+            );
+
+        const currentDistance =
+            distances[currentKey];
+
+
+        for (
+            const direction of
+            connections[currentKey]
+        ) {
+
+            const [dr, dc] =
+                DELTA[direction];
+
+            const nr =
+                current.row + dr;
+
+            const nc =
+                current.col + dc;
+
+            const nextKey =
+                key(nr, nc);
+
+
+            if (
+                distances[nextKey] === undefined
+            ) {
+
+                distances[nextKey] =
+                    currentDistance + 1;
+
+                queue.push({
+                    row: nr,
+                    col: nc
+                });
+            }
+        }
+    }
+
+    return distances;
+}
+
+
+// ========================================
+// PARÇANIN GERÇEK BAĞLANTILARI
+// ========================================
+
+function getConnections(tile) {
+
+    let result =
+        [...tile.baseConnections];
+
+
+    for (
+        let i = 0;
+        i < tile.rotation;
+        i++
+    ) {
+
+        result =
+            result.map(direction => {
+
+                if (direction === "N")
+                    return "E";
+
+                if (direction === "E")
+                    return "S";
+
+                if (direction === "S")
+                    return "W";
+
+                return "N";
+            });
+    }
+
+    return result;
+}
+
+
+// ========================================
+// TAHTAYI ÇİZ
+// ========================================
 
 function renderBoard() {
 
     board.innerHTML = "";
 
-    for (let row = 0; row < SIZE; row++) {
+    board.style.gridTemplateColumns =
+        `repeat(${size}, 1fr)`;
 
-        for (let col = 0; col < SIZE; col++) {
+    board.style.gridTemplateRows =
+        `repeat(${size}, 1fr)`;
 
-            const data = tiles[row][col];
+
+    for (let r = 0; r < size; r++) {
+
+        for (let c = 0; c < size; c++) {
+
+            const data =
+                tiles[r][c];
+
 
             const tile =
                 document.createElement("button");
@@ -160,27 +495,35 @@ function renderBoard() {
 
             tile.className = "tile";
 
-            tile.dataset.row = row;
-            tile.dataset.col = col;
+            tile.dataset.row = r;
+            tile.dataset.col = c;
 
 
             if (data.type === "source") {
-                tile.classList.add("source");
+
+                tile.classList.add(
+                    "source"
+                );
             }
 
+
             if (data.type === "target") {
-                tile.classList.add("target");
+
+                tile.classList.add(
+                    "target"
+                );
             }
 
 
             const inner =
                 document.createElement("div");
 
-            inner.className = "tile-inner";
+            inner.className =
+                "tile-inner";
 
 
             /*
-               PARÇANIN ROTASYONU
+               Döndürme
             */
 
             inner.style.transform =
@@ -188,18 +531,13 @@ function renderBoard() {
 
 
             /*
-               Temel bağlantılar.
-               Rotasyonu .tile-inner uyguluyor.
+               Temel yolları çiz.
             */
 
-            const connections =
-                getConnections(
-                    data.type,
-                    0
-                );
-
-
-            connections.forEach(direction => {
+            for (
+                const direction
+                of data.baseConnections
+            ) {
 
                 const connection =
                     document.createElement("div");
@@ -207,44 +545,59 @@ function renderBoard() {
                 connection.className =
                     "connection";
 
+
                 let angle = 0;
 
-                if (direction === "N") angle = 0;
-                if (direction === "E") angle = 90;
-                if (direction === "S") angle = 180;
-                if (direction === "W") angle = 270;
+                if (direction === "N")
+                    angle = 0;
+
+                if (direction === "E")
+                    angle = 90;
+
+                if (direction === "S")
+                    angle = 180;
+
+                if (direction === "W")
+                    angle = 270;
+
 
                 connection.style.transform =
                     `translate(-50%, -100%) rotate(${angle}deg)`;
 
 
-                inner.appendChild(connection);
-            });
+                inner.appendChild(
+                    connection
+                );
+            }
 
 
             tile.appendChild(inner);
 
 
             /*
-               HER BASIŞTA 90 DERECE
+               Her basışta 90 derece
             */
 
             tile.addEventListener(
                 "click",
                 () => {
 
-                    if (solved) return;
+                    if (solved)
+                        return;
+
 
                     data.rotation =
                         (data.rotation + 1) % 4;
 
+
                     moves++;
+
 
                     renderBoard();
 
-                    updateUI();
+                    checkConnections();
 
-                    checkLight();
+                    updateUI();
                 }
             );
 
@@ -255,28 +608,18 @@ function renderBoard() {
 }
 
 
-/* =========================================
-   IŞIĞI HESAPLA
-   ========================================= */
+// ========================================
+// OTOMATİK BAĞLANTI SİSTEMİ
+// ========================================
 
-function checkLight() {
-
-    document
-        .querySelectorAll(".tile")
-        .forEach(tile => {
-
-            tile.classList.remove("lit");
-            tile.classList.remove("reached");
-
-        });
-
+function checkConnections() {
 
     const visited = new Set();
 
     const queue = [
         {
-            row: 0,
-            col: 0
+            row: findSource().row,
+            col: findSource().col
         }
     ];
 
@@ -286,25 +629,34 @@ function checkLight() {
         const current =
             queue.shift();
 
-        const key =
-            `${current.row}-${current.col}`;
+        const currentKey =
+            key(
+                current.row,
+                current.col
+            );
 
 
-        if (visited.has(key)) {
+        if (
+            visited.has(currentKey)
+        ) {
             continue;
         }
 
-        visited.add(key);
+
+        visited.add(currentKey);
 
 
         const currentTile =
-            tiles[current.row][current.col];
+            tiles[
+                current.row
+            ][
+                current.col
+            ];
 
 
-        const connections =
+        const currentConnections =
             getConnections(
-                currentTile.type,
-                currentTile.rotation
+                currentTile
             );
 
 
@@ -315,68 +667,60 @@ function checkLight() {
             );
 
 
+        /*
+           Bağlanan parçayı ışıklandır.
+        */
+
         if (element) {
-            element.classList.add("lit");
+
+            element.classList.add(
+                "lit"
+            );
         }
 
 
         /*
-           HEDEFE ULAŞILDI
+           Komşular
         */
 
-        if (currentTile.type === "target") {
+        for (
+            const direction
+            of currentConnections
+        ) {
 
-            solved = true;
+            const [dr, dc] =
+                DELTA[direction];
 
-            if (element) {
-                element.classList.add("reached");
-            }
+            const nr =
+                current.row + dr;
 
-            levelComplete();
-
-            return;
-        }
-
-
-        /*
-           KOMŞU KAROLARI KONTROL ET
-        */
-
-        connections.forEach(direction => {
-
-            const move =
-                DIR[direction];
-
-            const nextRow =
-                current.row + move.row;
-
-            const nextCol =
-                current.col + move.col;
+            const nc =
+                current.col + dc;
 
 
             if (
-                nextRow < 0 ||
-                nextRow >= SIZE ||
-                nextCol < 0 ||
-                nextCol >= SIZE
+                nr < 0 ||
+                nr >= size ||
+                nc < 0 ||
+                nc >= size
             ) {
-                return;
+                continue;
             }
 
 
             const nextTile =
-                tiles[nextRow][nextCol];
+                tiles[nr][nc];
 
 
             const nextConnections =
                 getConnections(
-                    nextTile.type,
-                    nextTile.rotation
+                    nextTile
                 );
 
 
             /*
-               İKİ TARAF DA BİRBİRİNE BAĞLANIYORSA
+               İki yol aynı noktaya
+               bakıyorsa otomatik bağlanır.
             */
 
             if (
@@ -386,29 +730,84 @@ function checkLight() {
             ) {
 
                 queue.push({
-                    row: nextRow,
-                    col: nextCol
+                    row: nr,
+                    col: nc
                 });
             }
-
-        });
+        }
     }
 
 
-    lightStatus.textContent = "KAPALI";
+    const connected =
+        visited.size;
 
-    lightStatus.classList.remove("on");
+    const total =
+        size * size;
 
-    message.textContent =
-        "Parçaları döndür ve ışığı hedefe ulaştır.";
 
-    message.classList.remove("success");
+    const percent =
+        Math.round(
+            (connected / total) * 100
+        );
+
+
+    /*
+       Bağlantı yüzdesini göster.
+    */
+
+    if (percent === 100) {
+
+        levelComplete();
+
+    }
+    else {
+
+        lightStatus.textContent =
+            `${percent}%`;
+
+        lightStatus.classList.remove(
+            "on"
+        );
+
+        message.textContent =
+            `${connected} / ${total} kare bağlı`;
+    }
 }
 
 
-/* =========================================
-   KARO ELEMENTİNİ BUL
-   ========================================= */
+// ========================================
+// KAYNAĞI BUL
+// ========================================
+
+function findSource() {
+
+    for (let r = 0; r < size; r++) {
+
+        for (let c = 0; c < size; c++) {
+
+            if (
+                tiles[r][c].type ===
+                "source"
+            ) {
+
+                return {
+                    row: r,
+                    col: c
+                };
+            }
+        }
+    }
+
+    return {
+        row: 0,
+        col: 0
+    };
+}
+
+
+// ========================================
+// KARO ELEMENTİ
+// ========================================
 
 function getTileElement(row, col) {
 
@@ -418,57 +817,110 @@ function getTileElement(row, col) {
 }
 
 
-/* =========================================
-   BÖLÜM TAMAMLANDI
-   ========================================= */
+// ========================================
+// TAMAMLANMA
+// ========================================
 
 function levelComplete() {
 
-    lightStatus.textContent = "AÇIK";
+    solved = true;
 
-    lightStatus.classList.add("on");
+    lightStatus.textContent =
+        "100%";
+
+    lightStatus.classList.add(
+        "on"
+    );
+
 
     message.textContent =
-        "🎉 Tebrikler! Işık hedefe ulaştı!";
+        `🎉 SEVİYE ${level} TAMAMLANDI!`;
 
-    message.classList.add("success");
+    message.classList.add(
+        "success"
+    );
 
-    completedLevel.textContent = "1";
+
+    completedLevel.textContent =
+        level;
 
     totalMoves.textContent =
         moves;
 
+
     calculateStars();
+
+
+    /*
+       1.5 saniye sonra sonraki
+       seviyeye geç.
+    */
+
+    setTimeout(() => {
+
+        level++;
+
+        startLevel();
+
+    }, 1500);
 }
 
 
-/* =========================================
-   YILDIZ
-   ========================================= */
+// ========================================
+// YILDIZ
+// ========================================
 
 function calculateStars() {
 
     let result = 1;
 
-    if (moves <= 10) {
+    const goodMoves =
+        size * size * 2;
+
+
+    if (moves <= goodMoves) {
+
         result = 3;
+
     }
-    else if (moves <= 18) {
+    else if (
+        moves <= goodMoves * 1.5
+    ) {
+
         result = 2;
+
     }
+
 
     stars.textContent =
         "⭐".repeat(result);
 }
 
 
-/* =========================================
-   ARAYÜZ
-   ========================================= */
+// ========================================
+// ÇÖZÜLMÜŞ MÜ?
+// ========================================
+
+function isSolved() {
+
+    /*
+       Geçici kontrol.
+       Gerçek kontrol checkConnections
+       tarafından yapılır.
+    */
+
+    return false;
+}
+
+
+// ========================================
+// ARAYÜZ
+// ========================================
 
 function updateUI() {
 
-    levelNumber.textContent = "1";
+    levelNumber.textContent =
+        level;
 
     moveCount.textContent =
         moves;
@@ -477,26 +929,60 @@ function updateUI() {
         moves;
 
     completedLevel.textContent =
-        "1";
+        level;
 
     if (!solved) {
-        stars.textContent = "0";
+
+        stars.textContent =
+            "0";
     }
 }
 
 
-/* =========================================
-   YENİDEN BAŞLAT
-   ========================================= */
+// ========================================
+// SEVİYE BAŞLAT
+// ========================================
+
+function startLevel() {
+
+    size =
+        getBoardSize();
+
+    moves = 0;
+
+    solved = false;
+
+    message.classList.remove(
+        "success"
+    );
+
+
+    generatePuzzle();
+
+    renderBoard();
+
+    updateUI();
+
+    checkConnections();
+}
+
+
+// ========================================
+// YENİDEN BAŞLAT
+// ========================================
 
 resetButton.addEventListener(
     "click",
-    startGame
+    () => {
+
+        startLevel();
+
+    }
 );
 
 
-/* =========================================
-   BAŞLAT
-   ========================================= */
+// ========================================
+// BAŞLAT
+// ========================================
 
-startGame();
+startLevel();
