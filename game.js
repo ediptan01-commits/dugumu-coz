@@ -34,9 +34,13 @@ let tiles = [];
 // OYUNCU KAYDI
 // =========================================
 
-let gold = Number(
-    localStorage.getItem("isikYollariGold") || 0
-);
+let savedGold = localStorage.getItem("isikYollariGold");
+
+let gold = Number(savedGold);
+
+if (!Number.isFinite(gold) || gold < 0) {
+    gold = 0;
+}
 
 let unlockedLevel = Number(
     localStorage.getItem("isikYollariUnlockedLevel") || 1
