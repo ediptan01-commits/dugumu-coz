@@ -1231,3 +1231,27 @@ body.theme-fire #resetButton {
     box-shadow:
         0 0 15px rgba(255, 70, 0, .25);
 }
+
+/* 🔵 MAVİ ENERJİ */
+
+body.light-blue .tile.lit {
+    background: radial-gradient(
+        circle,
+        #00aaff,
+        #0055aa
+    );
+
+    border-color: #55ddff;
+
+    box-shadow:
+        0 0 20px #00aaff,
+        inset 0 0 20px rgba(100,220,255,.4);
+}
+
+body.light-blue .tile.lit .connection {
+    background: #8eeeff;
+
+    box-shadow:
+        0 0 10px #00cfff,
+        0 0 25px #008cff;
+}
