@@ -10,27 +10,23 @@ const resetButton = document.getElementById("resetButton");
 
 const SIZE = 4;
 
+let tiles = [];
 let moves = 0;
 let solved = false;
-let tiles = [];
 
-/*
-    Bağlantılar:
 
-    N = Yukarı
-    E = Sağ
-    S = Aşağı
-    W = Sol
-*/
+/* =========================================
+   YÖNLER
+   ========================================= */
 
-const directions = {
+const DIR = {
     N: { row: -1, col: 0 },
     E: { row: 0, col: 1 },
     S: { row: 1, col: 0 },
     W: { row: 0, col: -1 }
 };
 
-const opposite = {
+const OPPOSITE = {
     N: "S",
     E: "W",
     S: "N",
@@ -38,20 +34,28 @@ const opposite = {
 };
 
 
-/* ========================================
-   BÖLÜM 1
-   ======================================== */
+/* =========================================
+   ÇÖZÜLMÜŞ BÖLÜM
+   =========================================
 
-const level1 = [
+   💡 ─ ─ ┐
+          │
+   ┌ ─ ─ ┘
+   │
+   │
+   └ ─ ─ 🎯
+*/
+
+const solvedLevel = [
     [
         { type: "source", rotation: 0 },
         { type: "straight", rotation: 0 },
         { type: "straight", rotation: 0 },
-        { type: "corner", rotation: 0 }
+        { type: "corner", rotation: 2 }
     ],
 
     [
-        { type: "corner", rotation: 2 },
+        { type: "corner", rotation: 0 },
         { type: "straight", rotation: 0 },
         { type: "straight", rotation: 0 },
         { type: "straight", rotation: 1 }
@@ -59,13 +63,13 @@ const level1 = [
 
     [
         { type: "straight", rotation: 1 },
-        { type: "straight", rotation: 1 },
-        { type: "straight", rotation: 1 },
-        { type: "straight", rotation: 1 }
+        { type: "empty", rotation: 0 },
+        { type: "empty", rotation: 0 },
+        { type: "empty", rotation: 0 }
     ],
 
     [
-        { type: "corner", rotation: 2 },
+        { type: "corner", rotation: 1 },
         { type: "straight", rotation: 0 },
         { type: "straight", rotation: 0 },
         { type: "target", rotation: 0 }
@@ -73,33 +77,35 @@ const level1 = [
 ];
 
 
-/* ========================================
-   PARÇANIN BAĞLANTILARI
-   ======================================== */
+/* =========================================
+   BAĞLANTILAR
+   ========================================= */
 
 function getConnections(type, rotation) {
 
-    let connections = [];
+    let base = [];
 
     if (type === "straight") {
-        connections = ["E", "W"];
+        base = ["E", "W"];
     }
 
     if (type === "corner") {
-        connections = ["N", "E"];
+        base = ["N", "E"];
     }
 
     if (type === "source") {
-        connections = ["E"];
+        base = ["E"];
     }
 
     if (type === "target") {
-        connections = ["W"];
+        base = ["W"];
     }
+
+    let result = [...base];
 
     for (let i = 0; i < rotation; i++) {
 
-        connections = connections.map(direction => {
+        result = result.map(direction => {
 
             if (direction === "N") return "E";
             if (direction === "E") return "S";
@@ -110,13 +116,13 @@ function getConnections(type, rotation) {
 
     }
 
-    return connections;
+    return result;
 }
 
 
-/* ========================================
+/* =========================================
    OYUNU BAŞLAT
-   ======================================== */
+   ========================================= */
 
 function startGame() {
 
@@ -124,7 +130,7 @@ function startGame() {
     solved = false;
 
     tiles = JSON.parse(
-        JSON.stringify(level1)
+        JSON.stringify(solvedLevel)
     );
 
     scrambleBoard();
@@ -137,9 +143,9 @@ function startGame() {
 }
 
 
-/* ========================================
+/* =========================================
    KARIŞTIR
-   ======================================== */
+   ========================================= */
 
 function scrambleBoard() {
 
@@ -147,18 +153,22 @@ function scrambleBoard() {
 
         for (let col = 0; col < SIZE; col++) {
 
-            tiles[row][col].rotation =
-                Math.floor(Math.random() * 4);
+            const tile = tiles[row][col];
 
+            if (tile.type !== "empty") {
+
+                tile.rotation =
+                    Math.floor(Math.random() * 4);
+
+            }
         }
-
     }
 }
 
 
-/* ========================================
-   TAHTAYI ÇİZ
-   ======================================== */
+/* =========================================
+   TAHTAYI OLUŞTUR
+   ========================================= */
 
 function renderBoard() {
 
@@ -174,11 +184,11 @@ function renderBoard() {
                 document.createElement("button");
 
             tile.type = "button";
-
             tile.className = "tile";
 
             tile.dataset.row = row;
             tile.dataset.col = col;
+
 
             if (data.type === "source") {
                 tile.classList.add("source");
@@ -188,6 +198,10 @@ function renderBoard() {
                 tile.classList.add("target");
             }
 
+            if (data.type === "empty") {
+                tile.classList.add("empty");
+            }
+
 
             const inner =
                 document.createElement("div");
@@ -195,15 +209,26 @@ function renderBoard() {
             inner.className = "tile-inner";
 
 
+            /*
+               ASIL DÖNÜŞ BURADA.
+
+               Parçanın tamamı 90 derece dönüyor.
+            */
+
+            inner.style.transform =
+                `rotate(${data.rotation * 90}deg)`;
+
+
             const connections =
                 getConnections(
                     data.type,
-                    data.rotation
+                    0
                 );
 
 
             /*
-                HER BAĞLANTI AYRI BİR KOL
+               Temel parçayı çiziyoruz.
+               Döndürmeyi yukarıdaki transform yapıyor.
             */
 
             connections.forEach(direction => {
@@ -217,11 +242,29 @@ function renderBoard() {
                 connection.dataset.direction =
                     direction;
 
-                const angle =
-                    getAngle(direction);
+
+                let angle = 0;
+
+                if (direction === "N") {
+                    angle = 0;
+                }
+
+                if (direction === "E") {
+                    angle = 90;
+                }
+
+                if (direction === "S") {
+                    angle = 180;
+                }
+
+                if (direction === "W") {
+                    angle = 270;
+                }
+
 
                 connection.style.transform =
                     `translate(-50%, -100%) rotate(${angle}deg)`;
+
 
                 inner.appendChild(connection);
 
@@ -230,13 +273,18 @@ function renderBoard() {
 
             tile.appendChild(inner);
 
+
             /*
-                HER BASIŞTA DÖN
+               HER BASIŞTA 90 DERECE
             */
 
             tile.addEventListener(
                 "click",
-                () => rotateTile(row, col)
+                function () {
+
+                    rotateTile(row, col);
+
+                }
             );
 
 
@@ -246,35 +294,9 @@ function renderBoard() {
 }
 
 
-/* ========================================
-   YÖN AÇISI
-   ======================================== */
-
-function getAngle(direction) {
-
-    switch (direction) {
-
-        case "N":
-            return 0;
-
-        case "E":
-            return 90;
-
-        case "S":
-            return 180;
-
-        case "W":
-            return 270;
-
-        default:
-            return 0;
-    }
-}
-
-
-/* ========================================
+/* =========================================
    PARÇAYI DÖNDÜR
-   ======================================== */
+   ========================================= */
 
 function rotateTile(row, col) {
 
@@ -282,14 +304,27 @@ function rotateTile(row, col) {
         return;
     }
 
+    const tile = tiles[row][col];
+
     /*
-       HER PARÇA DÖNEBİLİR
+       Boş kare dönmez.
     */
 
-    tiles[row][col].rotation =
-        (tiles[row][col].rotation + 1) % 4;
+    if (tile.type === "empty") {
+        return;
+    }
+
+
+    /*
+       90 DERECE SAĞA
+    */
+
+    tile.rotation =
+        (tile.rotation + 1) % 4;
+
 
     moves++;
+
 
     renderBoard();
 
@@ -299,9 +334,9 @@ function rotateTile(row, col) {
 }
 
 
-/* ========================================
+/* =========================================
    IŞIĞI HESAPLA
-   ======================================== */
+   ========================================= */
 
 function checkLight() {
 
@@ -341,14 +376,14 @@ function checkLight() {
         visited.add(key);
 
 
-        const currentTile =
+        const tile =
             tiles[current.row][current.col];
 
 
         const connections =
             getConnections(
-                currentTile.type,
-                currentTile.rotation
+                tile.type,
+                tile.rotation
             );
 
 
@@ -365,10 +400,10 @@ function checkLight() {
 
 
         /*
-            HEDEFE ULAŞILDI
+           HEDEF
         */
 
-        if (currentTile.type === "target") {
+        if (tile.type === "target") {
 
             solved = true;
 
@@ -383,13 +418,13 @@ function checkLight() {
 
 
         /*
-            BAĞLANTILARI TAKİP ET
+           HER BAĞLANTIYI KONTROL ET
         */
 
         connections.forEach(direction => {
 
             const move =
-                directions[direction];
+                DIR[direction];
 
 
             const nextRow =
@@ -413,6 +448,11 @@ function checkLight() {
                 tiles[nextRow][nextCol];
 
 
+            if (nextTile.type === "empty") {
+                return;
+            }
+
+
             const nextConnections =
                 getConnections(
                     nextTile.type,
@@ -421,12 +461,12 @@ function checkLight() {
 
 
             /*
-                İKİ PARÇADA DA BAĞLANTI VARSA
+               İKİ PARÇA BİRBİRİNE BAKIYORSA
             */
 
             if (
                 nextConnections.includes(
-                    opposite[direction]
+                    OPPOSITE[direction]
                 )
             ) {
 
@@ -438,7 +478,6 @@ function checkLight() {
             }
 
         });
-
     }
 
 
@@ -454,9 +493,9 @@ function checkLight() {
 }
 
 
-/* ========================================
-   KAROYU BUL
-   ======================================== */
+/* =========================================
+   KARO BUL
+   ========================================= */
 
 function getTileElement(row, col) {
 
@@ -466,9 +505,9 @@ function getTileElement(row, col) {
 }
 
 
-/* ========================================
+/* =========================================
    BÖLÜM TAMAMLANDI
-   ======================================== */
+   ========================================= */
 
 function levelComplete() {
 
@@ -477,10 +516,13 @@ function levelComplete() {
 
     lightStatus.classList.add("on");
 
+
     message.textContent =
-        `🎉 Tebrikler! Bölüm tamamlandı.`;
+        "🎉 Tebrikler! Işık hedefe ulaştı!";
+
 
     message.classList.add("success");
+
 
     completedLevel.textContent =
         "1";
@@ -488,37 +530,39 @@ function levelComplete() {
     totalMoves.textContent =
         moves;
 
+
     calculateStars();
 }
 
 
-/* ========================================
+/* =========================================
    YILDIZ
-   ======================================== */
+   ========================================= */
 
 function calculateStars() {
 
-    let earned = 1;
+    let result = 1;
 
     if (moves <= 12) {
-        earned = 3;
+        result = 3;
     }
     else if (moves <= 20) {
-        earned = 2;
+        result = 2;
     }
 
     stars.textContent =
-        "⭐".repeat(earned);
+        "⭐".repeat(result);
 }
 
 
-/* ========================================
+/* =========================================
    ARAYÜZ
-   ======================================== */
+   ========================================= */
 
 function updateUI() {
 
-    levelNumber.textContent = "1";
+    levelNumber.textContent =
+        "1";
 
     moveCount.textContent =
         moves;
@@ -529,15 +573,16 @@ function updateUI() {
     completedLevel.textContent =
         "1";
 
+
     if (!solved) {
         stars.textContent = "0";
     }
 }
 
 
-/* ========================================
+/* =========================================
    YENİDEN BAŞLAT
-   ======================================== */
+   ========================================= */
 
 resetButton.addEventListener(
     "click",
@@ -545,8 +590,8 @@ resetButton.addEventListener(
 );
 
 
-/* ========================================
+/* =========================================
    BAŞLAT
-   ======================================== */
+   ========================================= */
 
 startGame();
