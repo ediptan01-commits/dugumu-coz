@@ -30,6 +30,85 @@ let moves = 0;
 let solved = false;
 let tiles = [];
 
+// =========================================
+// OYUNCU KAYDI
+// =========================================
+
+let gold = Number(
+    localStorage.getItem("isikYollariGold") || 0
+);
+
+let unlockedLevel = Number(
+    localStorage.getItem("isikYollariUnlockedLevel") || 1
+);
+
+
+// =========================================
+// ALTIN ELEMANLARI
+// =========================================
+
+const goldCount =
+    document.getElementById("goldCount");
+
+const footerGold =
+    document.getElementById("footerGold");
+
+const hintButton =
+    document.getElementById("hintButton");
+
+
+// =========================================
+// KAYDET
+// =========================================
+
+function saveProgress() {
+
+    localStorage.setItem(
+        "isikYollariGold",
+        gold
+    );
+
+    localStorage.setItem(
+        "isikYollariUnlockedLevel",
+        unlockedLevel
+    );
+}
+
+
+// =========================================
+// ALTIN GÖSTER
+// =========================================
+
+function updateGoldUI() {
+
+    if (goldCount) {
+        goldCount.textContent =
+            `${gold} 🪙`;
+    }
+
+    if (footerGold) {
+        footerGold.textContent =
+            `${gold} 🪙`;
+    }
+}
+
+
+// =========================================
+// ALTIN KAZAN
+// =========================================
+
+function addGold(amount) {
+
+    gold += amount;
+
+    saveProgress();
+
+    updateGoldUI();
+}
+
+
+// İlk açılışta göster
+updateGoldUI();
 
 /* =========================================
    TAHTA BOYUTU
