@@ -1070,20 +1070,20 @@ function checkNetwork() {
        Tüm ağ bağlandı.
     */
 
-    if (
-        percent === 100 &&
-        visited.has(
-            key(
-                target.row,
-                target.col
-            )
+    // HEDEFE ULAŞILDIYSA BÖLÜM TAMAM
+if (
+    visited.has(
+        key(
+            target.row,
+            target.col
         )
-    ) {
+    )
+) {
 
-        levelComplete();
+    levelComplete();
 
-        return;
-    }
+    return;
+}
 
 
     lightStatus.classList.remove(
