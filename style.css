@@ -726,3 +726,13 @@ body {
 .shop-item:active {
     transform: scale(0.96);
 }
+
+/* OKYANUS TEMASI */
+
+body.theme-ocean {
+    --bg: #031b2e;
+    --panel: #063b5c;
+    --tile: #075985;
+    --border: #1685b5;
+    --cyan: #4ddcff;
+}
