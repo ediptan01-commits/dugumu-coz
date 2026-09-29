@@ -111,6 +111,7 @@ shopItems.forEach((item) => {
     );
 
     applyTheme();
+    renderBoard();       
         }
 
         item.querySelector("span").textContent =
